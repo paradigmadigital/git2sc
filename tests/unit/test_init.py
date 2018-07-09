@@ -84,13 +84,13 @@ class TestMain(unittest.TestCase):
     def test_article_subcommand(self):
         self.args.subcommand = 'article'
         self.args.article_id = '1'
-        self.args.content_path = 'index.html'
+        self.args.content = '<p> This is a test </p>'
 
         main()
         self.assertEqual(
             self.git2sc.return_value.update_page.assert_called_with(
-                '1',
-                'index.html',
+                self.args.article_id,
+                self.args.content,
             ),
             None
         )

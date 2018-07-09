@@ -21,9 +21,13 @@ def load_parser():
         help='Confluence article id',
     )
     article_parser.add_argument(
-        "content_path",
-        help="Path to the file with the content to upload",
+        "content",
+        help="HTML content for the page",
     )
+    # article_parser.add_argument(
+    #     "content_path",
+    #     help="Path to the file with the content to upload",
+    # )
 
     argcomplete.autocomplete(parser)
     return parser

@@ -39,7 +39,7 @@ def main():
     g = Git2SC(api_url, auth)
 
     if args.subcommand == 'article':
-        g.update_page(args.article_id, args.content_path)
+        g.update_page(args.article_id, args.content)
 
 
 if __name__ == "__main__":

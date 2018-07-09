@@ -12,4 +12,4 @@ class TestArgparse(unittest.TestCase):
         parsed = self.parser.parse_args(['article', '1', 'index.html'])
         self.assertEqual(parsed.subcommand, 'article')
         self.assertEqual(parsed.article_id, '1')
-        self.assertEqual(parsed.content_path, 'index.html')
+        self.assertEqual(parsed.content, 'index.html')
