@@ -14,10 +14,10 @@ python3 setup.py install
 ## Update an article
 
 This command will update the confluence article with id `{{ article_id }}` with
-the content in the file `{{ path_to_content }}`.
+the HTML string `{{ content }}`.
 
 ```bash
-git2sc article {{ article_id }} {{ path_to_content }}
+git2sc article {{ article_id }} {{ content }}
 ```
 
 # Test
