@@ -6,15 +6,17 @@ class Git2SC():
 
     def __init__(self, confluence_api_url, auth):
         self.api_url = confluence_api_url
-        self.auth = auth
+        self.auth = tuple(auth.split(':'))
+        self.pages = {}
 
     def get_page_info(self, pageid):
         '''Get all the information of a confluence page'''
 
-        url = '{base}/content/{pageid}?expand=ancestors,body.storage'.format(
+        url = '{base}/content/{pageid}'.format(
             base=self.api_url,
             pageid=pageid,
-        )
+        ) + '?expand=ancestors,body.storage,version'
+
         r = requests.get(url, auth=self.auth)
         r.raise_for_status()
         return r.json()
@@ -36,7 +38,7 @@ class Git2SC():
         url = '{base}/content/?spaceKey={spaceid}'.format(
                 base=self.api_url,
                 spaceid=spaceid,
-            ) + '?expand=ancestors,body.storage'
+            ) + '?expand=ancestors,body.storage,version'
         r = requests.get(url, auth=self.auth)
         r.raise_for_status()
         self.pages = {}

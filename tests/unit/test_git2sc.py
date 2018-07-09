@@ -9,12 +9,15 @@ class TestGit2SC(unittest.TestCase):
 
     def setUp(self):
         self.api_url = 'https://confluence.sucks.com/wiki/rest/api'
-        self.auth = 'user:password'
-        self.g = Git2SC(self.api_url, self.auth)
+        self.auth_string = 'user:password'
+        self.auth = tuple(self.auth_string.split(':'))
+        self.g = Git2SC(self.api_url, self.auth_string)
 
     def test_has_auth_set(self):
         self.assertEqual(self.g.auth, self.auth)
 
+    def test_has_empty_pages_by_default(self):
+        self.assertEqual(self.g.pages, {})
     def test_has_confluence_url_set(self):
         self.assertEqual(self.g.api_url, self.api_url)
 
@@ -24,7 +27,7 @@ class TestGit2SC(unittest.TestCase):
         result = self.g.get_page_info(page_id)
         self.assertEqual(
             requestMock.assert_called_with(
-                '{}/content/{}?expand=ancestors,body.storage'.format(
+                '{}/content/{}?expand=ancestors,body.storage,version'.format(
                     self.api_url,
                     page_id,
                 ),
@@ -87,7 +90,8 @@ class TestGit2SC(unittest.TestCase):
         self.g.get_space_articles(space_id)
         self.assertEqual(
             requestMock.assert_called_with(
-                '{}/content/?spaceKey={}?expand=ancestors,body.storage'.format(
+                '{}/content/?spaceKey={}?expand='
+                'ancestors,body.storage,version'.format(
                     self.api_url,
                     space_id,
                 ),
