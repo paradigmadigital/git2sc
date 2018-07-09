@@ -1,5 +1,4 @@
 import json
-import pytest
 import unittest
 from unittest.mock import patch
 from git2sc.git2sc import Git2SC
@@ -13,20 +12,26 @@ class TestGit2SC(unittest.TestCase):
         self.auth = tuple(self.auth_string.split(':'))
         self.g = Git2SC(self.api_url, self.auth_string)
 
+        self.requests_patch = patch('git2sc.git2sc.requests')
+        self.requests = self.requests_patch.start()
+
+    def tearDown(self):
+        self.requests.stop()
+
     def test_has_auth_set(self):
         self.assertEqual(self.g.auth, self.auth)
 
     def test_has_empty_pages_by_default(self):
         self.assertEqual(self.g.pages, {})
+
     def test_has_confluence_url_set(self):
         self.assertEqual(self.g.api_url, self.api_url)
 
-    @patch('git2sc.git2sc.requests.get')
-    def test_can_get_page_info(self, requestMock):
+    def test_can_get_page_info(self):
         page_id = '372274410'
         result = self.g.get_page_info(page_id)
         self.assertEqual(
-            requestMock.assert_called_with(
+            self.requests.get.assert_called_with(
                 '{}/content/{}?expand=ancestors,body.storage,version'.format(
                     self.api_url,
                     page_id,
@@ -35,18 +40,17 @@ class TestGit2SC(unittest.TestCase):
             ),
             None,
         )
-        self.assertTrue(requestMock.return_value.raise_for_status.called)
-        self.assertEqual(result, requestMock.return_value.json())
+        self.assertTrue(self.requests.get.return_value.raise_for_status.called)
+        self.assertEqual(result, self.requests.get.return_value.json())
 
-    @patch('git2sc.git2sc.requests.get')
-    def test_can_get_space_homepage(self, requestMock):
+    def test_can_get_space_homepage(self):
         space_id = 'TST'
-        requestMock.return_value.json.return_value = {
+        self.requests.get.return_value.json.return_value = {
             '_expandable': {'homepage': '/rest/api/content/372334010'},
         }
         result = self.g.get_space_homepage(space_id)
         self.assertEqual(
-            requestMock.assert_called_with(
+            self.requests.get.assert_called_with(
                 '{}/space/{}'.format(
                     self.api_url,
                     space_id,
@@ -55,13 +59,12 @@ class TestGit2SC(unittest.TestCase):
             ),
             None,
         )
-        self.assertTrue(requestMock.return_value.raise_for_status.called)
+        self.assertTrue(self.requests.get.return_value.raise_for_status.called)
         self.assertEqual(result, '372334010')
 
-    @patch('git2sc.git2sc.requests.get')
-    def test_can_get_space_articles(self, requestMock):
+    def test_can_get_space_articles(self):
         space_id = 'TST'
-        requestMock.return_value.json.return_value = {
+        self.requests.get.return_value.json.return_value = {
             "results": [
                 {
                     "id": "371111110",
@@ -89,7 +92,7 @@ class TestGit2SC(unittest.TestCase):
         }
         self.g.get_space_articles(space_id)
         self.assertEqual(
-            requestMock.assert_called_with(
+            self.requests.get.assert_called_with(
                 '{}/content/?spaceKey={}?expand='
                 'ancestors,body.storage,version'.format(
                     self.api_url,
@@ -99,11 +102,10 @@ class TestGit2SC(unittest.TestCase):
             ),
             None,
         )
-        self.assertTrue(requestMock.return_value.raise_for_status.called)
+        self.assertTrue(self.requests.get.return_value.raise_for_status.called)
         self.assertEqual(self.g.pages, desired_pages)
 
-    @patch('git2sc.git2sc.requests.put')
-    def test_can_update_articles(self, requestMock):
+    def test_can_update_articles(self):
         page_id = '372274410'
         html = '<p> This is a test </p>'
         self.g.pages = {}
@@ -139,7 +141,7 @@ class TestGit2SC(unittest.TestCase):
         })
 
         self.assertEqual(
-            requestMock.assert_called_with(
+            self.requests.put.assert_called_with(
                 '{}/content/{}'.format(
                     self.api_url,
                     page_id,
@@ -150,30 +152,18 @@ class TestGit2SC(unittest.TestCase):
             ),
             None,
         )
-        self.assertTrue(requestMock.return_value.raise_for_status.called)
+        self.assertTrue(self.requests.put.return_value.raise_for_status.called)
 
     @patch('git2sc.git2sc.json')
-    @patch('git2sc.git2sc.requests')
     @patch('git2sc.git2sc.Git2SC.get_page_info')
-    def test_can_update_articles_not_in_pages(
-        self,
-        getPageInfoMock,
-        requestMock,
-        jsonMock,
-    ):
+    def test_can_update_articles_not_in_pages(self, getPageInfoMock, jsonMock):
         page_id = '372274410'
         html = '<p> This is a test </p>'
         self.g.pages = {}
         self.g.update_page(page_id, html)
         self.assertEqual(getPageInfoMock.assert_called_with(page_id), None)
 
-    @patch('git2sc.git2sc.json')
-    @patch('git2sc.git2sc.requests')
-    def test_can_update_articles_with_title(
-        self,
-        requestMock,
-        jsonMock,
-    ):
+    def test_can_update_articles_with_title(self):
         page_id = '372274410'
         html = '<p> This is a test </p>'
         self.g.pages = {}
