@@ -9,6 +9,11 @@ git clone https://git.paradigmadigital.com/seguridad/git2sc
 python3 setup.py install
 ```
 
+Set up the credentials in the environment variables:
+
+* `GIT2SC_API_URL`: `https://company.atlassian.net/wiki/rest/api`
+* `GIT2SC_AUTH`: `username:password`
+
 # Usage
 
 ## Update an article
