@@ -1,3 +1,4 @@
+import json
 import requests
 
 
@@ -81,11 +82,10 @@ class Git2SC():
         r = requests.put(
             url,
             data=data,
-            auth=auth,
+            auth=self.auth,
             headers={'Content-Type': 'application/json'}
         )
 
         r.raise_for_status()
 
-        print("Wrote '%s' version %d" % (info['title'], ver))
-        print("URL: %s%d" % (VIEW_URL, pageid))
+        print("Wrote '%s' version %d" % (self.pages[pageid]['title'], ver))

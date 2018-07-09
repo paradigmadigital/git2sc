@@ -1,7 +1,8 @@
-from git2sc.git2sc import Git2SC
+import json
 import pytest
 import unittest
 from unittest.mock import patch
+from git2sc.git2sc import Git2SC
 
 
 class TestGit2SC(unittest.TestCase):
@@ -97,21 +98,62 @@ class TestGit2SC(unittest.TestCase):
         self.assertTrue(requestMock.return_value.raise_for_status.called)
         self.assertEqual(self.g.pages, desired_pages)
 
-    @pytest.mark.skip()
-    @patch('git2sc.git2sc.requests.get')
+    @patch('git2sc.git2sc.requests.put')
     def test_can_update_articles(self, requestMock):
         page_id = '372274410'
         html = '<p> This is a test </p>'
-        result = self.g.update_page(page_id, html)
+        self.g.pages = {}
+        self.g.pages[page_id] = {
+            'version': {
+                'number': 1
+            },
+            'title': 'Test page title',
+            'ancestors': [
+                {
+                    'ancestor': 'ancestor name',
+                    '_links': 'link',
+                    '_expandable': 'expandable',
+                    'extensions': 'extensions',
+                }
+            ]
+        }
+        self.g.update_page(page_id, html)
+
+        data_json = json.dumps({
+            'id': page_id,
+            'type': 'page',
+            'title': 'Test page title',
+            'version': {'number': 2},
+            'ancestors': [{'ancestor': 'ancestor name'}],
+            'body': {
+                'storage':
+                {
+                    'representation': 'storage',
+                    'value': html,
+                }
+            }
+        })
+
         self.assertEqual(
             requestMock.assert_called_with(
                 '{}/content/{}'.format(
                     self.api_url,
                     page_id,
                 ),
-                auth=self.auth
+                data=data_json,
+                auth=self.auth,
+                headers={'Content-Type': 'application/json'},
             ),
             None,
         )
         self.assertTrue(requestMock.return_value.raise_for_status.called)
-        self.assertEqual(result, requestMock.return_value.json())
+
+    @pytest.mark.skip()
+    @patch('git2sc.git2sc.requests.get')
+    def test_can_update_articles_not_in_pages(self, requestMock):
+        pass
+
+    @pytest.mark.skip()
+    @patch('git2sc.git2sc.requests.get')
+    def test_can_update_articles_with_title(self, requestMock):
+        pass
