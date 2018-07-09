@@ -148,12 +148,44 @@ class TestGit2SC(unittest.TestCase):
         )
         self.assertTrue(requestMock.return_value.raise_for_status.called)
 
-    @pytest.mark.skip()
-    @patch('git2sc.git2sc.requests.get')
-    def test_can_update_articles_not_in_pages(self, requestMock):
-        pass
+    @patch('git2sc.git2sc.json')
+    @patch('git2sc.git2sc.requests')
+    @patch('git2sc.git2sc.Git2SC.get_page_info')
+    def test_can_update_articles_not_in_pages(
+        self,
+        getPageInfoMock,
+        requestMock,
+        jsonMock,
+    ):
+        page_id = '372274410'
+        html = '<p> This is a test </p>'
+        self.g.pages = {}
+        self.g.update_page(page_id, html)
+        self.assertEqual(getPageInfoMock.assert_called_with(page_id), None)
 
-    @pytest.mark.skip()
-    @patch('git2sc.git2sc.requests.get')
-    def test_can_update_articles_with_title(self, requestMock):
-        pass
+    @patch('git2sc.git2sc.json')
+    @patch('git2sc.git2sc.requests')
+    def test_can_update_articles_with_title(
+        self,
+        requestMock,
+        jsonMock,
+    ):
+        page_id = '372274410'
+        html = '<p> This is a test </p>'
+        self.g.pages = {}
+        self.g.pages[page_id] = {
+            'version': {
+                'number': 1
+            },
+            'title': 'Test page title',
+            'ancestors': [
+                {
+                    'ancestor': 'ancestor name',
+                    '_links': 'link',
+                    '_expandable': 'expandable',
+                    'extensions': 'extensions',
+                }
+            ]
+        }
+        self.g.update_page(page_id, html, 'new title')
+        self.assertEqual(self.g.pages[page_id]['title'], 'new title')

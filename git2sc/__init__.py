@@ -1,77 +1,46 @@
+#!/usr/bin/python
+# git2sc: program to sync a git documentation repository to Confluence.
 #
+# Copyright (C) 2018 jamatute <jamatute@paradigmadigital.com>
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
 #
-#    def get_login(username=None):
-#        '''
-#        Get the password for username out of the keyring.
-#        '''
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
-#        if username is None:
-#            username = getpass.getuser()
-#
-#        passwd = keyring.get_password('confluence_script', username)
-#
-#        if passwd is None:
-#            passwd = getpass.getpass()
-#            keyring.set_password('confluence_script', username, passwd)
-#
-#        return (username, passwd)
-#
-#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-# def main():
-#
-#     parser = argparse.ArgumentParser()
-#
-#     parser.add_argument(
-#         "-u",
-#         "--user",
-#         default=getpass.getuser(),
-#         help="Specify the username to log into Confluence")
-#
-#     parser.add_argument(
-#         "-t",
-#         "--title",
-#         default=None,
-#         type=str,
-#         help="Specify a new title")
-#
-#     parser.add_argument(
-#         "-f",
-#         "--file",
-#         default=None,
-#         type=str,
-#         help="Write the contents of FILE to the confluence page")
-#
-#     parser.add_argument(
-#         "pageid",
-#         type=int,
-#         help="Specify the Conflunce page id to overwrite")
-#
-#     parser.add_argument(
-#         "html",
-#         type=str,
-#         default=None,
-#         nargs='?',
-#         help="Write the immediate html string to confluence page")
-#
-#     options = parser.parse_args()
-#
-#     auth = get_login(options.user)
-#
-#     if options.html is not None and options.file is not None:
-#         raise RuntimeError(
-#             "Can't specify both a file and immediate html to write to page!")
-#
-#     if options.html:
-#         html = options.html
-#
-#     else:
-#
-#         with open(options.file, 'r') as fd:
-#             html = fd.read()
-#
-#     write_data(auth, html, options.pageid, options.title)
-#
-#
-# if __name__ == "__main__":
-#     main()
+import os
+from git2sc.git2sc import Git2SC
+from git2sc.cli import load_parser
+
+
+def main():
+    parser = load_parser()
+    args = parser.parse_args()
+    try:
+        api_url = os.environ['GIT2SC_API_URL']
+    except KeyError:
+        print('GIT2SC_API_URL environmental variable not set')
+        return
+
+    try:
+        auth = os.environ['GIT2SC_AUTH']
+    except KeyError:
+        print('GIT2SC_AUTH environmental variable not set')
+        return
+
+    g = Git2SC(api_url, auth)
+
+    if args.subcommand == 'article':
+        g.update_page(args.article_id, args.content_path)
+
+
+if __name__ == "__main__":
+    main()
