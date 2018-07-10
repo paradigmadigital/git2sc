@@ -253,32 +253,3 @@ class TestGit2SC(unittest.TestCase):
         )
         self.assertTrue(self.requests.post.return_value.raise_for_status.called)
 
-    def test_request_error_display_message_if_rc_not_200(self):
-        '''Required to ensure that the _requests_error method returns the
-        desired structure inside the print when a requests instance has a
-        return code different from 200'''
-
-        requests_object = Mock()
-        requests_object.text = json.dumps({
-            'statusCode': 400,
-            'message': 'Error message',
-        })
-        self.g._requests_error(requests_object)
-        self.assertEqual(
-            self.print.assert_called_with(
-                'Error 400: Error message'
-            ),
-            None,
-        )
-
-    def test_request_error_do_nothing_if_rc_is_200(self):
-        '''Required to ensure that the _requests_error method does nothing
-        if the return code is 200'''
-
-        requests_object = Mock()
-        requests_object.text = json.dumps({
-            'statusCode': 200,
-            'message': 'Error message',
-        })
-        self.g._requests_error(requests_object)
-        self.assertFalse(self.print.called)

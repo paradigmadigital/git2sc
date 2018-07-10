@@ -10,17 +10,6 @@ class Git2SC():
         self.auth = tuple(auth.split(':'))
         self.pages = {}
 
-    def _requests_error(self, requests_object):
-        '''Print the confluence error'''
-
-        response = json.loads(requests_object.text)
-
-        if response['statusCode'] != 200:
-            print('Error {}: {}'.format(
-                response['statusCode'],
-                response['message'],
-            ))
-
     def get_page_info(self, pageid):
         '''Get all the information of a confluence page'''
 
