@@ -1,6 +1,6 @@
 import json
 import unittest
-from unittest.mock import patch
+from unittest.mock import patch, Mock
 from git2sc.git2sc import Git2SC
 
 
@@ -15,8 +15,12 @@ class TestGit2SC(unittest.TestCase):
         self.requests_patch = patch('git2sc.git2sc.requests')
         self.requests = self.requests_patch.start()
 
+        self.print_patch = patch('git2sc.git2sc.print')
+        self.print = self.print_patch.start()
+
     def tearDown(self):
         self.requests.stop()
+        self.print.stop()
 
     def test_has_auth_set(self):
         self.assertEqual(self.g.auth, self.auth)
@@ -183,3 +187,83 @@ class TestGit2SC(unittest.TestCase):
         }
         self.g.update_page(page_id, html, 'new title')
         self.assertEqual(self.g.pages[page_id]['title'], 'new title')
+
+    def test_can_create_articles_as_parent(self):
+        html = '<p> This is a new page </p>'
+        self.g.create_page('TST', 'new title', html)
+
+        data_json = json.dumps({
+            'type': 'page',
+            'title': 'new title',
+            'space': {'key': 'TST'},
+            'body': {
+                'storage': {
+                    'value': html,
+                    'representation': 'storage'
+                },
+            },
+        })
+
+        self.assertEqual(
+            self.requests.post.assert_called_with(
+                '{}/content'.format(self.api_url),
+                data=data_json,
+                auth=self.auth,
+                headers={'Content-Type': 'application/json'},
+            ),
+            None,
+        )
+        self.assertTrue(self.requests.post.return_value.raise_for_status.called)
+
+    def test_can_create_articles_as_a_child(self):
+        html = '<p> This is a new page </p>'
+        parent_id = '372274410'
+        self.g.create_page('TST', 'new title', html, parent_id)
+
+        data_json = json.dumps({
+            'type': 'page',
+            'title': 'new title',
+            'space': {'key': 'TST'},
+
+            'ancestors': [{'id': parent_id}],
+            'body': {
+                'storage': {
+                    'value': html,
+                    'representation': 'storage'
+                },
+            },
+        })
+
+        self.assertEqual(
+            self.requests.post.assert_called_with(
+                '{}/content'.format(self.api_url),
+                data=data_json,
+                auth=self.auth,
+                headers={'Content-Type': 'application/json'},
+            ),
+            None,
+        )
+        self.assertTrue(self.requests.post.return_value.raise_for_status.called)
+
+    def test_request_error_display_message_if_rc_not_200(self):
+        requests_object = Mock()
+        requests_object.text = json.dumps({
+            'statusCode': 400,
+            'message': 'Error message',
+        })
+        self.g._requests_error(requests_object)
+        self.assertEqual(
+            self.print.assert_called_with(
+                'Error 400: Error message'
+            ),
+            None,
+        )
+
+    def test_request_error_do_nothing_if_rc_is_200(self):
+        requests_object = Mock()
+        requests_object.text = json.dumps({
+            'statusCode': 200,
+            'message': 'Error message',
+        })
+        self.g._requests_error(requests_object)
+        self.assertFalse(self.print.called)

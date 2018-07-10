@@ -10,6 +10,17 @@ class Git2SC():
         self.auth = tuple(auth.split(':'))
         self.pages = {}
 
+    def _requests_error(self, requests_object):
+        '''Print the confluence error'''
+
+        response = json.loads(requests_object.text)
+
+        if response['statusCode'] != 200:
+            print('Error {}: {}'.format(
+                response['statusCode'],
+                response['message'],
+            ))
+
     def get_page_info(self, pageid):
         '''Get all the information of a confluence page'''
 
@@ -93,3 +104,43 @@ class Git2SC():
         r.raise_for_status()
 
         print("Wrote '%s' version %d" % (self.pages[pageid]['title'], version))
+
+    def create_page(self, space, title, html, parent_id=None):
+        '''Create a confluence page with the content of the html variable'''
+
+        if parent_id is None:
+            data_json = json.dumps({
+                'type': 'page',
+                'title': title,
+                'space': {'key': space},
+                'body': {
+                    'storage': {
+                        'value': html,
+                        'representation': 'storage'
+                    },
+                },
+            })
+        else:
+            data_json = json.dumps({
+                'type': 'page',
+                'title': title,
+                'space': {'key': space},
+                'ancestors': [{'id': parent_id}],
+                'body': {
+                    'storage': {
+                        'value': html,
+                        'representation': 'storage'
+                    },
+                },
+            })
+
+        url = '{base}/content'.format(base=self.api_url)
+
+        r = requests.post(
+            url,
+            data=data_json,
+            auth=self.auth,
+            headers={'Content-Type': 'application/json'}
+        )
+
+        r.raise_for_status()
