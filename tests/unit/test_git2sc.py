@@ -189,6 +189,10 @@ class TestGit2SC(unittest.TestCase):
         self.assertEqual(self.g.pages[page_id]['title'], 'new title')
 
     def test_can_create_articles_as_parent(self):
+        '''Required to ensure that the create_page method posts to the
+        correct api endpoint with the correct data structure if no
+        inheritance is set'''
+
         html = '<p> This is a new page </p>'
         self.g.create_page('TST', 'new title', html)
 
@@ -216,6 +220,10 @@ class TestGit2SC(unittest.TestCase):
         self.assertTrue(self.requests.post.return_value.raise_for_status.called)
 
     def test_can_create_articles_as_a_child(self):
+        '''Required to ensure that the create_page method posts to the
+        correct api endpoint with the correct data structure if inheritance
+        is set'''
+
         html = '<p> This is a new page </p>'
         parent_id = '372274410'
         self.g.create_page('TST', 'new title', html, parent_id)
@@ -246,6 +254,10 @@ class TestGit2SC(unittest.TestCase):
         self.assertTrue(self.requests.post.return_value.raise_for_status.called)
 
     def test_request_error_display_message_if_rc_not_200(self):
+        '''Required to ensure that the _requests_error method returns the
+        desired structure inside the print when a requests instance has a
+        return code different from 200'''
+
         requests_object = Mock()
         requests_object.text = json.dumps({
             'statusCode': 400,
@@ -260,6 +272,9 @@ class TestGit2SC(unittest.TestCase):
         )
 
     def test_request_error_do_nothing_if_rc_is_200(self):
+        '''Required to ensure that the _requests_error method does nothing
+        if the return code is 200'''
+
         requests_object = Mock()
         requests_object.text = json.dumps({
             'statusCode': 200,

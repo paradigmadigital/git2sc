@@ -16,6 +16,9 @@ class TestArgparse(unittest.TestCase):
         self.assertEqual(parsed.content, 'index.html')
 
     def test_has_subcommand_article_create(self):
+        '''Required to ensure that the parser is correctly configured to
+        create an article as expected'''
+
         parsed = self.parser.parse_args(
             ['article', 'create', 'TST', 'new article', '<p>New article!</p>']
         )
@@ -27,6 +30,9 @@ class TestArgparse(unittest.TestCase):
         self.assertEqual(parsed.parent_id, None)
 
     def test_has_subcommand_article_create_optional_parent_id(self):
+        '''Required to ensure that the parser is correctly configured to
+        create an article as a child of another article'''
+
         parsed = self.parser.parse_args(
             [
                 'article',
