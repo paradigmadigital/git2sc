@@ -5,6 +5,7 @@ from git2sc.git2sc import Git2SC
 
 
 class TestGit2SC(unittest.TestCase):
+    '''Test class for the Git2SC class'''
 
     def setUp(self):
         self.api_url = 'https://confluence.sucks.com/wiki/rest/api'
@@ -15,12 +16,14 @@ class TestGit2SC(unittest.TestCase):
         self.requests_patch = patch('git2sc.git2sc.requests')
         self.requests = self.requests_patch.start()
 
-        self.print_patch = patch('git2sc.git2sc.print')
-        self.print = self.print_patch.start()
+        self.requests_error_patch = patch(
+            'git2sc.git2sc.Git2SC._requests_error',
+        )
+        self.requests_error = self.requests_error_patch.start()
 
     def tearDown(self):
-        self.requests.stop()
-        self.print.stop()
+        self.requests_patch.stop()
+        self.requests_error_patch.stop()
 
     def test_has_auth_set(self):
         self.assertEqual(self.g.auth, self.auth)
@@ -44,7 +47,7 @@ class TestGit2SC(unittest.TestCase):
             ),
             None,
         )
-        self.assertTrue(self.requests.get.return_value.raise_for_status.called)
+        self.assertTrue(self.requests_error.called)
         self.assertEqual(result, self.requests.get.return_value.json())
 
     def test_can_get_space_homepage(self):
@@ -63,7 +66,7 @@ class TestGit2SC(unittest.TestCase):
             ),
             None,
         )
-        self.assertTrue(self.requests.get.return_value.raise_for_status.called)
+        self.assertTrue(self.requests_error.called)
         self.assertEqual(result, '372334010')
 
     def test_can_get_space_articles(self):
@@ -106,7 +109,7 @@ class TestGit2SC(unittest.TestCase):
             ),
             None,
         )
-        self.assertTrue(self.requests.get.return_value.raise_for_status.called)
+        self.assertTrue(self.requests_error.called)
         self.assertEqual(self.g.pages, desired_pages)
 
     def test_can_update_articles(self):
@@ -156,7 +159,7 @@ class TestGit2SC(unittest.TestCase):
             ),
             None,
         )
-        self.assertTrue(self.requests.put.return_value.raise_for_status.called)
+        self.assertTrue(self.requests_error.called)
 
     @patch('git2sc.git2sc.json')
     @patch('git2sc.git2sc.Git2SC.get_page_info')
@@ -217,7 +220,7 @@ class TestGit2SC(unittest.TestCase):
             ),
             None,
         )
-        self.assertTrue(self.requests.post.return_value.raise_for_status.called)
+        self.assertTrue(self.requests_error.called)
 
     def test_can_create_articles_as_a_child(self):
         '''Required to ensure that the create_page method posts to the
@@ -251,19 +254,36 @@ class TestGit2SC(unittest.TestCase):
             ),
             None,
         )
-        self.assertTrue(self.requests.post.return_value.raise_for_status.called)
+        self.assertTrue(self.requests_error.called)
+
+
+class TestGit2SC_requests_error(unittest.TestCase):
+    '''Test class for the Git2SC _requests_error method'''
+
+    def setUp(self):
+        self.api_url = 'https://confluence.sucks.com/wiki/rest/api'
+        self.auth_string = 'user:password'
+        self.auth = tuple(self.auth_string.split(':'))
+        self.g = Git2SC(self.api_url, self.auth_string)
+
+        self.requests_object = Mock()
+
+        self.print_patch = patch('git2sc.git2sc.print')
+        self.print = self.print_patch.start()
+
+    def tearDown(self):
+        self.print.stop()
 
     def test_request_error_display_message_if_rc_not_200(self):
         '''Required to ensure that the _requests_error method returns the
         desired structure inside the print when a requests instance has a
         return code different from 200'''
 
-        requests_object = Mock()
-        requests_object.text = json.dumps({
+        self.requests_object.text = json.dumps({
             'statusCode': 400,
             'message': 'Error message',
         })
-        self.g._requests_error(requests_object)
+        self.g._requests_error(self.requests_object)
         self.assertEqual(
             self.print.assert_called_with(
                 'Error 400: Error message'
@@ -275,10 +295,9 @@ class TestGit2SC(unittest.TestCase):
         '''Required to ensure that the _requests_error method does nothing
         if the return code is 200'''
 
-        requests_object = Mock()
-        requests_object.text = json.dumps({
+        self.requests_object.text = json.dumps({
             'statusCode': 200,
             'message': 'Error message',
         })
-        self.g._requests_error(requests_object)
+        self.g._requests_error(self.requests_object)
         self.assertFalse(self.print.called)
