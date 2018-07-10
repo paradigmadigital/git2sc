@@ -6,6 +6,8 @@
 
 ```bash
 git clone https://git.paradigmadigital.com/seguridad/git2sc
+virtualenv -p python3 git2sc
+source git2sc/bin/activate
 python3 setup.py install
 ```
 

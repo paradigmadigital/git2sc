@@ -3,6 +3,7 @@ import requests
 
 
 class Git2SC():
+    '''Class to to sync a git documentation repository to Confluence.'''
 
     def __init__(self, confluence_api_url, auth):
         self.api_url = confluence_api_url
@@ -46,18 +47,19 @@ class Git2SC():
             self.pages[page['id']] = page
 
     def update_page(self, pageid, html, title=None):
+        '''Update a confluence page with the content of the html variable'''
 
         try:
             self.pages[pageid]
         except KeyError:
             self.pages[pageid] = self.get_page_info(pageid)
 
-        ver = int(self.pages[pageid]['version']['number']) + 1
+        version = int(self.pages[pageid]['version']['number']) + 1
 
-        anc = self.pages[pageid]['ancestors'][-1]
-        del anc['_links']
-        del anc['_expandable']
-        del anc['extensions']
+        ancestors = self.pages[pageid]['ancestors'][-1]
+        del ancestors['_links']
+        del ancestors['_expandable']
+        del ancestors['extensions']
 
         if title is not None:
             self.pages[pageid]['title'] = title
@@ -66,8 +68,8 @@ class Git2SC():
             'id': str(pageid),
             'type': 'page',
             'title': self.pages[pageid]['title'],
-            'version': {'number': ver},
-            'ancestors': [anc],
+            'version': {'number': version},
+            'ancestors': [ancestors],
             'body': {
                 'storage':
                 {
@@ -90,4 +92,4 @@ class Git2SC():
 
         r.raise_for_status()
 
-        print("Wrote '%s' version %d" % (self.pages[pageid]['title'], ver))
+        print("Wrote '%s' version %d" % (self.pages[pageid]['title'], version))
