@@ -256,6 +256,34 @@ class TestGit2SC(unittest.TestCase):
         )
         self.assertTrue(self.requests_error.called)
 
+    @patch('git2sc.git2sc.shlex')
+    @patch('git2sc.git2sc.subprocess')
+    def test_can_process_adoc(self, subprocessMock, shlexMock):
+        '''Required to ensure that we can transform adoc files to html'''
+        path_to_file = '/path/to/file'
+        result = self.g._process_adoc(path_to_file)
+
+        self.assertEqual(
+            shlexMock.quote.assert_called_with(path_to_file),
+            None,
+        )
+        self.assertEqual(
+            subprocessMock.check_output.assert_called_with(
+                [
+                    'asciidoctor',
+                    shlexMock.quote.return_value,
+                    '-o',
+                    '-',
+                ],
+                shell=False,
+            ),
+            None,
+        )
+        self.assertEqual(
+            result,
+            subprocessMock.check_output.return_value.decode.return_value
+        )
+
 
 class TestGit2SC_requests_error(unittest.TestCase):
     '''Test class for the Git2SC _requests_error method'''

@@ -1,5 +1,7 @@
 import json
 import requests
+import shlex
+import subprocess
 
 
 class Git2SC():
@@ -144,3 +146,9 @@ class Git2SC():
         )
 
         self._requests_error(r)
+
+    def _process_adoc(self, adoc_file_path):
+        return subprocess.check_output(
+            ['asciidoctor', shlex.quote(adoc_file_path), '-o', '-'],
+            shell=False,
+        ).decode()
