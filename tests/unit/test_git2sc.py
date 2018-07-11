@@ -261,6 +261,8 @@ class TestGit2SC(unittest.TestCase):
         correct api endpoint with the correct data structure'''
 
         page_id = '372274410'
+        self.requests.delete.return_value.status_code = 204
+
         self.g.delete_page(page_id)
 
         self.assertEqual(
@@ -270,6 +272,17 @@ class TestGit2SC(unittest.TestCase):
             ),
             None,
         )
+        self.assertFalse(self.requests_error.called)
+
+    def test_delete_articles_calls_requests_error_if_rc_not_204(self):
+        '''If the deletion of article works it returns a 204 as stated by the
+        docs, we need to make sure that requests_error gets called otherwise'''
+
+        page_id = '372274410'
+        self.requests.delete.return_value.status_code = 404
+
+        self.g.delete_page(page_id)
+
         self.assertTrue(self.requests_error.called)
 
 

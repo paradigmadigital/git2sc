@@ -155,4 +155,5 @@ class Git2SC():
             auth=self.auth,
         )
 
-        self._requests_error(r)
+        if r.status_code is not 204:
+            self._requests_error(r)
