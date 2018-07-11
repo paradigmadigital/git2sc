@@ -1,4 +1,9 @@
 
+0.4.0 / 2018-07-11
+==================
+
+  * Feature: delete confluence article giving article id
+
 0.3.0 / 2018-07-10
 ==================
 
