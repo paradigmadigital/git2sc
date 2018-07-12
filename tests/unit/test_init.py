@@ -1,4 +1,3 @@
-import pytest
 import unittest
 from unittest.mock import patch, PropertyMock
 
@@ -34,11 +33,16 @@ class TestMain(unittest.TestCase):
         self.git2sc_patch.stop()
 
     def test_main_loads_parser(self):
+        '''Required to ensure that the main program load the parser'''
+
         self.load_parser.parse_args = True
         main()
         self.assertTrue(self.load_parser.called)
 
     def test_main_loads_gives_error_if_no_url_in_env(self):
+        '''Required to ensure that the main program will fail if
+        the environmental variable GIT2SC_API_URL is not set'''
+
         type(self.os).environ = PropertyMock(
             return_value={
                 'GIT2SC_AUTH': 'user:password',
@@ -53,6 +57,9 @@ class TestMain(unittest.TestCase):
         )
 
     def test_main_loads_gives_error_if_no_auth_in_env(self):
+        '''Required to ensure that the main program will fail if
+        the environmental variable GIT2SC_AUTH is not set'''
+
         type(self.os).environ = PropertyMock(
             return_value={
                 'GIT2SC_API_URL': 'https://confluence.sucks.com/wiki/rest/api',
@@ -67,10 +74,16 @@ class TestMain(unittest.TestCase):
         )
 
     def test_main_loads_url_and_auth_from_env(self):
+        '''Required to ensure that the main program loads the GIT2SC_AUTH and
+        GIT2SC_API_URL variables from the environment, I know it's not the
+        perfect test but didn't manage to do any other way'''
+
         main()
         self.assertEqual(self.env.call_count, 2)
 
     def test_main_loads_git2sc_object(self):
+        '''Required to ensure that the main program load the git2sc object'''
+
         main()
         self.assertEqual(
             self.git2sc.assert_called_with(
@@ -82,6 +95,9 @@ class TestMain(unittest.TestCase):
         self.assertTrue(self.git2sc.called)
 
     def test_article_update_subcommand(self):
+        '''Required to ensure that the main program reacts as expected when
+        called with the update page arguments'''
+
         self.args.subcommand = 'article'
         self.args.article_command = 'update'
         self.args.article_id = '1'

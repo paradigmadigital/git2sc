@@ -13,10 +13,8 @@ class Git2SC():
     def get_page_info(self, pageid):
         '''Get all the information of a confluence page'''
 
-        url = '{base}/content/{pageid}'.format(
-            base=self.api_url,
-            pageid=pageid,
-        ) + '?expand=ancestors,body.storage,version'
+        url = '{base}/content/{pageid}?expand=ancestors,body.storage,version'\
+            .format(base=self.api_url, pageid=pageid)
 
         r = requests.get(url, auth=self.auth)
         r.raise_for_status()
@@ -36,10 +34,11 @@ class Git2SC():
     def get_space_articles(self, spaceid):
         '''Get all the pages of a confluence space'''
 
-        url = '{base}/content/?spaceKey={spaceid}'.format(
+        url = '{base}/content/?spaceKey={spaceid}'\
+            '?expand=ancestors,body.storage,version'.format(
                 base=self.api_url,
                 spaceid=spaceid,
-            ) + '?expand=ancestors,body.storage,version'
+            )
         r = requests.get(url, auth=self.auth)
         r.raise_for_status()
         self.pages = {}
