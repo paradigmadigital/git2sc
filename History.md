@@ -1,4 +1,11 @@
 
+0.5.0 / 2018-07-12
+==================
+
+  * Added support for importing html
+  * Added support for importing adoc
+  * Corrected _requests_error algorithm
+
 0.3.0 / 2018-07-10
 ==================
 
