@@ -3,7 +3,7 @@ import requests
 
 
 class Git2SC():
-    '''Class to to sync a git documentation repository to Confluence.'''
+    '''Class to sync a git documentation repository to Confluence.'''
 
     def __init__(self, confluence_api_url, auth):
         self.api_url = confluence_api_url
