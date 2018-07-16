@@ -1,6 +1,6 @@
 import json
 import unittest
-from unittest.mock import patch
+from unittest.mock import patch, Mock
 from git2sc.git2sc import Git2SC
 
 
@@ -15,8 +15,12 @@ class TestGit2SC(unittest.TestCase):
         self.requests_patch = patch('git2sc.git2sc.requests')
         self.requests = self.requests_patch.start()
 
+        self.print_patch = patch('git2sc.git2sc.print')
+        self.print = self.print_patch.start()
+
     def tearDown(self):
         self.requests.stop()
+        self.print.stop()
 
     def test_has_auth_set(self):
         'Required attribute for some methods'
@@ -208,3 +212,69 @@ class TestGit2SC(unittest.TestCase):
         }
         self.g.update_page(page_id, html, 'new title')
         self.assertEqual(self.g.pages[page_id]['title'], 'new title')
+
+    def test_can_create_articles_as_parent(self):
+        '''Required to ensure that the create_page method posts to the
+        correct api endpoint with the correct data structure if no
+        inheritance is set'''
+
+        html = '<p> This is a new page </p>'
+        self.g.create_page('TST', 'new title', html)
+
+        data_json = json.dumps({
+            'type': 'page',
+            'title': 'new title',
+            'space': {'key': 'TST'},
+            'body': {
+                'storage': {
+                    'value': html,
+                    'representation': 'storage'
+                },
+            },
+        })
+
+        self.assertEqual(
+            self.requests.post.assert_called_with(
+                '{}/content'.format(self.api_url),
+                data=data_json,
+                auth=self.auth,
+                headers={'Content-Type': 'application/json'},
+            ),
+            None,
+        )
+        self.assertTrue(self.requests.post.return_value.raise_for_status.called)
+
+    def test_can_create_articles_as_a_child(self):
+        '''Required to ensure that the create_page method posts to the
+        correct api endpoint with the correct data structure if inheritance
+        is set'''
+
+        html = '<p> This is a new page </p>'
+        parent_id = '372274410'
+        self.g.create_page('TST', 'new title', html, parent_id)
+
+        data_json = json.dumps({
+            'type': 'page',
+            'title': 'new title',
+            'space': {'key': 'TST'},
+
+            'ancestors': [{'id': parent_id}],
+            'body': {
+                'storage': {
+                    'value': html,
+                    'representation': 'storage'
+                },
+            },
+        })
+
+        self.assertEqual(
+            self.requests.post.assert_called_with(
+                '{}/content'.format(self.api_url),
+                data=data_json,
+                auth=self.auth,
+                headers={'Content-Type': 'application/json'},
+            ),
+            None,
+        )
+        self.assertTrue(self.requests.post.return_value.raise_for_status.called)
+

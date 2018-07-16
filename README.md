@@ -25,7 +25,23 @@ This command will update the confluence article with id `{{ article_id }}` with
 the HTML string `{{ content }}`.
 
 ```bash
-git2sc article {{ article_id }} {{ content }}
+git2sc article update {{ article_id }} {{ content }}
+```
+
+## Create an article
+
+This command will create an confluence article under the `{{ space }}` space,
+with title `{{ title }}` and with the HTML string `{{ content }}`.
+
+```bash
+git2sc article create {{ space }} {{ title }} {{ content }}
+```
+
+If you want to make the article a children of another article use the `-p {{
+parent_id }}` flag
+
+```bash
+git2sc article create -p {{ parent_id }} {{ space }} {{ title }} {{ content }}
 ```
 
 # Test

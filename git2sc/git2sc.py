@@ -3,7 +3,7 @@ import requests
 
 
 class Git2SC():
-    '''Class to to sync a git documentation repository to Confluence.'''
+    '''Class to sync a git documentation repository to Confluence.'''
 
     def __init__(self, confluence_api_url, auth):
         self.api_url = confluence_api_url
@@ -92,3 +92,34 @@ class Git2SC():
         r.raise_for_status()
 
         print("Wrote '%s' version %d" % (self.pages[pageid]['title'], version))
+
+    def create_page(self, space, title, html, parent_id=None):
+        '''Create a confluence page with the content of the html variable'''
+
+        data = {
+            'type': 'page',
+            'title': title,
+            'space': {'key': space},
+            'body': {
+                'storage': {
+                    'value': html,
+                    'representation': 'storage'
+                },
+            },
+        }
+
+        if parent_id is not None:
+            data['ancestors'] = [{'id': parent_id}]
+
+        data_json = json.dumps(data)
+
+        url = '{base}/content'.format(base=self.api_url)
+
+        r = requests.post(
+            url,
+            data=data_json,
+            auth=self.auth,
+            headers={'Content-Type': 'application/json'}
+        )
+
+        r.raise_for_status()
