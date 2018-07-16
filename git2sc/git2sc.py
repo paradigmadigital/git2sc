@@ -96,31 +96,22 @@ class Git2SC():
     def create_page(self, space, title, html, parent_id=None):
         '''Create a confluence page with the content of the html variable'''
 
-        if parent_id is None:
-            data_json = json.dumps({
-                'type': 'page',
-                'title': title,
-                'space': {'key': space},
-                'body': {
-                    'storage': {
-                        'value': html,
-                        'representation': 'storage'
-                    },
+        data = {
+            'type': 'page',
+            'title': title,
+            'space': {'key': space},
+            'body': {
+                'storage': {
+                    'value': html,
+                    'representation': 'storage'
                 },
-            })
-        else:
-            data_json = json.dumps({
-                'type': 'page',
-                'title': title,
-                'space': {'key': space},
-                'ancestors': [{'id': parent_id}],
-                'body': {
-                    'storage': {
-                        'value': html,
-                        'representation': 'storage'
-                    },
-                },
-            })
+            },
+        }
+
+        if parent_id is not None:
+            data['ancestors'] = [{'id': parent_id}]
+
+        data_json = json.dumps(data)
 
         url = '{base}/content'.format(base=self.api_url)
 
