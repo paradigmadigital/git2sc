@@ -26,15 +26,24 @@ class TestGit2SC(unittest.TestCase):
         self.requests_error_patch.stop()
 
     def test_has_auth_set(self):
+        'Required attribute for some methods'
+
         self.assertEqual(self.g.auth, self.auth)
 
     def test_has_empty_pages_by_default(self):
+        'Required to initialize the dictionary'
+
         self.assertEqual(self.g.pages, {})
 
     def test_has_confluence_url_set(self):
+        'Required attribute for some methods'
+
         self.assertEqual(self.g.api_url, self.api_url)
 
     def test_can_get_page_info(self):
+        '''Required to ensure that the get_page_info method calls the correct
+        api endpoint and returns a json object'''
+
         page_id = '372274410'
         result = self.g.get_page_info(page_id)
         self.assertEqual(
@@ -51,6 +60,9 @@ class TestGit2SC(unittest.TestCase):
         self.assertEqual(result, self.requests.get.return_value.json())
 
     def test_can_get_space_homepage(self):
+        '''Required to ensure that the get_space_homepage method calls the
+        correct api endpoint and returns the article id'''
+
         space_id = 'TST'
         self.requests.get.return_value.json.return_value = {
             '_expandable': {'homepage': '/rest/api/content/372334010'},
@@ -70,6 +82,10 @@ class TestGit2SC(unittest.TestCase):
         self.assertEqual(result, '372334010')
 
     def test_can_get_space_articles(self):
+        '''Required to ensure that the get_space_articles method calls the
+        correct api endpoint and returns a dictionary with the desired
+        pages as a dictionary of dictionaries'''
+
         space_id = 'TST'
         self.requests.get.return_value.json.return_value = {
             "results": [
@@ -113,6 +129,9 @@ class TestGit2SC(unittest.TestCase):
         self.assertEqual(self.g.pages, desired_pages)
 
     def test_can_update_articles(self):
+        '''Required to ensure that the update_page method posts to the
+        correct api endpoint with the correct data structure '''
+
         page_id = '372274410'
         html = '<p> This is a test </p>'
         self.g.pages = {}
@@ -164,6 +183,9 @@ class TestGit2SC(unittest.TestCase):
     @patch('git2sc.git2sc.json')
     @patch('git2sc.git2sc.Git2SC.get_page_info')
     def test_can_update_articles_not_in_pages(self, getPageInfoMock, jsonMock):
+        '''Required to ensure that the update_page method can update a page
+        even though the pages attribute is empty'''
+
         page_id = '372274410'
         html = '<p> This is a test </p>'
         self.g.pages = {}
@@ -171,6 +193,9 @@ class TestGit2SC(unittest.TestCase):
         self.assertEqual(getPageInfoMock.assert_called_with(page_id), None)
 
     def test_can_update_articles_with_title(self):
+        '''Required to ensure that the update_page method can update a page
+        specifying the title'''
+
         page_id = '372274410'
         html = '<p> This is a test </p>'
         self.g.pages = {}
