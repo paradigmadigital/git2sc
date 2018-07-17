@@ -201,6 +201,22 @@ class TestMain(unittest.TestCase):
                 self.args.title,
                 self.git2sc.return_value.import_file.return_value,
                 self.args.parent_id,
+
+            ),
+            None
+        )
+
+    def test_article_delete_subcommand(self):
+        '''Required to ensure that the main program reacts as expected when
+        called with the delete page arguments'''
+        self.args.subcommand = 'article'
+        self.args.article_command = 'delete'
+        self.args.article_id = '1'
+
+        main()
+        self.assertEqual(
+            self.git2sc.return_value.delete_page.assert_called_with(
+                self.args.article_id,
             ),
             None
         )

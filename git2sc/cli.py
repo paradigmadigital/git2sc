@@ -68,5 +68,12 @@ def load_parser():
         help='Content is html and not a path',
     )
 
+    article_delete_parser = article_command_parser.add_parser('delete')
+    article_delete_parser.add_argument(
+        "article_id",
+        type=str,
+        help='Confluence article id',
+    )
+
     argcomplete.autocomplete(parser)
     return parser
