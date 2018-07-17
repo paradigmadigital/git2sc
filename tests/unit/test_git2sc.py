@@ -288,7 +288,7 @@ class TestGit2SC(unittest.TestCase):
         page_id = '372274410'
         self.requests.delete.return_value.status_code = 204
 
-        self.g.delete_page(page_id)
+        self.git2sc.delete_page(page_id)
 
         self.assertEqual(
             self.requests.delete.assert_called_with(
@@ -306,7 +306,7 @@ class TestGit2SC(unittest.TestCase):
         page_id = '372274410'
         self.requests.delete.return_value.status_code = 404
 
-        self.g.delete_page(page_id)
+        self.git2sc.delete_page(page_id)
 
         self.assertTrue(self.requests_error.called)
 
