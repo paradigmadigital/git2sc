@@ -134,3 +134,16 @@ class Git2SC():
         )
 
         self._requests_error(r)
+
+    def delete_page(self, pageid):
+        '''Delete a confluence page given the pageid'''
+
+        url = '{base}/content/{pageid}'.format(base=self.api_url, pageid=pageid)
+
+        r = requests.delete(
+            url,
+            auth=self.auth,
+        )
+
+        if r.status_code is not 204:
+            self._requests_error(r)

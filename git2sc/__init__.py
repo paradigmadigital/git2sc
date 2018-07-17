@@ -43,6 +43,8 @@ def main():
             g.update_page(args.article_id, args.content)
         elif args.article_command == 'create':
             g.create_page(args.space, args.title, args.content, args.parent_id)
+        elif args.article_command == 'delete':
+            g.delete_page(args.article_id)
 
 
 if __name__ == "__main__":

@@ -281,6 +281,35 @@ class TestGit2SC(unittest.TestCase):
         )
         self.assertTrue(self.requests_error.called)
 
+    def test_can_delete_articles(self):
+        '''Required to ensure that the delete_page method posts to the
+        correct api endpoint with the correct data structure'''
+
+        page_id = '372274410'
+        self.requests.delete.return_value.status_code = 204
+
+        self.git2sc.delete_page(page_id)
+
+        self.assertEqual(
+            self.requests.delete.assert_called_with(
+                '{}/content/{}'.format(self.api_url, page_id),
+                auth=self.auth,
+            ),
+            None,
+        )
+        self.assertFalse(self.requests_error.called)
+
+    def test_delete_articles_calls_requests_error_if_rc_not_204(self):
+        '''If the deletion of article works it returns a 204 as stated by the
+        docs, we need to make sure that requests_error gets called otherwise'''
+
+        page_id = '372274410'
+        self.requests.delete.return_value.status_code = 404
+
+        self.git2sc.delete_page(page_id)
+
+        self.assertTrue(self.requests_error.called)
+
 
 class TestGit2SC_requests_error(unittest.TestCase):
     '''Test class for the Git2SC _requests_error method'''

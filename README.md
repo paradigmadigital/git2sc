@@ -44,6 +44,14 @@ parent_id }}` flag
 git2sc article create -p {{ parent_id }} {{ space }} {{ title }} {{ content }}
 ```
 
+## Delete an article
+
+This command will delete the confluence article with id `{{ article_id }}`.
+
+```bash
+git2sc article delete {{ article_id }}
+```
+
 # Test
 
 To run the tests first install `tox`
