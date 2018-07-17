@@ -33,6 +33,11 @@ def load_parser():
         "content",
         help="HTML content for the page",
     )
+    article_update_parser.add_argument(
+        "--html",
+        action="store_true",
+        help='Content is html and not a path',
+    )
 
     article_create_parser = article_command_parser.add_parser('create')
     article_create_parser.add_argument(
@@ -56,6 +61,11 @@ def load_parser():
         nargs='?',
         default=None,
         help="Parent id of the article to create",
+    )
+    article_create_parser.add_argument(
+        "--html",
+        action="store_true",
+        help='Content is html and not a path',
     )
 
     article_delete_parser = article_command_parser.add_parser('delete')

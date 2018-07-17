@@ -1,5 +1,8 @@
+import os
 import json
 import requests
+import shlex
+import subprocess
 
 
 class Git2SC():
@@ -13,9 +16,11 @@ class Git2SC():
     def _requests_error(self, requests_object):
         '''Print the confluence error'''
 
-        response = json.loads(requests_object.text)
+        if requests_object.status_code == 200:
+            return
+        else:
+            response = json.loads(requests_object.text)
 
-        if response['statusCode'] != 200:
             print('Error {}: {}'.format(
                 response['statusCode'],
                 response['message'],
@@ -102,8 +107,6 @@ class Git2SC():
 
         self._requests_error(r)
 
-        print("Wrote '%s' version %d" % (self.pages[pageid]['title'], version))
-
     def create_page(self, space, title, html, parent_id=None):
         '''Create a confluence page with the content of the html variable'''
 
@@ -147,3 +150,46 @@ class Git2SC():
 
         if r.status_code is not 204:
             self._requests_error(r)
+
+    def _process_adoc(self, adoc_file_path):
+        '''Takes a path to an adoc file, transform it and return it as
+        html'''
+
+        '''Clean the html for shitty confluence
+        *
+        * autoclose </meta> </link> </img> </br> </col>
+        '''
+
+        clean_path = os.path.expanduser(shlex.quote(adoc_file_path))
+
+        # Confluence doesn't like the <!DOCTYPE html> line, therefore
+        # the split('/n')
+        return subprocess.check_output(
+            ['asciidoctor', '-b', 'xhtml', clean_path, '-o', '-'],
+            shell=False,
+        ).decode().replace('<!DOCTYPE html>\n', '')
+
+    def _process_html(self, html_file_path):
+        '''Takes a path to an html file and returns it'''
+        clean_path = os.path.expanduser(shlex.quote(html_file_path))
+        with open(clean_path, 'r') as f:
+            return f.read()
+
+    def import_file(self, file_path):
+        '''Takes a path to a file and decides which _process.* method to use
+        based on the extension'''
+        extension = os.path.splitext(file_path)[-1]
+        if extension == '.adoc':
+            html = self._process_adoc(file_path)
+        elif extension == '.html':
+            html = self._process_html(file_path)
+        else:
+            raise UnknownExtension('Extension {} of file {} not known'.format(
+                extension,
+                file_path,
+            ))
+        return html
+
+
+class UnknownExtension(Exception):
+    pass

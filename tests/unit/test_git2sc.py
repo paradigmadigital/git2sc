@@ -1,7 +1,7 @@
 import json
 import unittest
 from unittest.mock import patch, Mock
-from git2sc.git2sc import Git2SC
+from git2sc.git2sc import Git2SC, UnknownExtension
 
 
 class TestGit2SC(unittest.TestCase):
@@ -281,6 +281,111 @@ class TestGit2SC(unittest.TestCase):
         )
         self.assertTrue(self.requests_error.called)
 
+    @patch('git2sc.git2sc.os')
+    @patch('git2sc.git2sc.shlex')
+    @patch('git2sc.git2sc.subprocess')
+    def test_can_process_adoc(self, subprocessMock, shlexMock, osMock):
+        '''Required to ensure that we can transform adoc files to html'''
+        path_to_file = '/path/to/file'
+        result = self.git2sc._process_adoc(path_to_file)
+
+        self.assertEqual(
+            shlexMock.quote.assert_called_with(path_to_file),
+            None,
+        )
+        self.assertEqual(
+            osMock.path.expanduser.assert_called_with(
+                shlexMock.quote.return_value,
+            ),
+            None,
+        )
+        self.assertEqual(
+            subprocessMock.check_output.assert_called_with(
+                [
+                    'asciidoctor',
+                    '-b',
+                    'xhtml',
+                    osMock.path.expanduser.return_value,
+                    '-o',
+                    '-',
+                ],
+                shell=False,
+            ),
+            None,
+        )
+        self.assertEqual(
+            result,
+            subprocessMock.check_output.return_value.decode.
+            return_value.replace('<!DOCTYPE html>\n', '')
+        )
+
+    @patch('git2sc.git2sc.os')
+    @patch('git2sc.git2sc.shlex')
+    @patch('git2sc.git2sc.open')
+    def test_can_process_html(self, openMock, shlexMock, osMock):
+        '''Required to ensure that we can load html files'''
+        path_to_file = '/path/to/file'
+        result = self.git2sc._process_html(path_to_file)
+
+        self.assertEqual(
+            shlexMock.quote.assert_called_with(path_to_file),
+            None,
+        )
+        self.assertEqual(
+            osMock.path.expanduser.assert_called_with(
+                shlexMock.quote.return_value,
+            ),
+            None,
+        )
+        self.assertEqual(
+            openMock.assert_called_with(
+                osMock.path.expanduser.return_value,
+                'r',
+            ),
+            None,
+        )
+        self.assertEqual(
+            result,
+            openMock.return_value.__enter__.return_value.read.return_value
+        )
+
+    @patch('git2sc.git2sc.Git2SC._process_adoc')
+    def test_import_file_method_supports_adoc_files(self, adocMock):
+        '''Required to ensure that the import_file method as a wrapper
+        of the _process_* recognizes asciidoc files'''
+        path_to_file = '/path/to/file.adoc'
+        html = self.git2sc.import_file(path_to_file)
+        self.assertEqual(
+            adocMock.assert_called_with(path_to_file),
+            None,
+        )
+        self.assertEqual(
+            html,
+            adocMock.return_value
+        )
+
+    @patch('git2sc.git2sc.Git2SC._process_html')
+    def test_import_file_method_supports_html_files(self, htmlMock):
+        '''Required to ensure that the import_file method as a wrapper
+        of the _process_* recognizes html files'''
+        path_to_file = '/path/to/file.html'
+        html = self.git2sc.import_file(path_to_file)
+        self.assertEqual(
+            htmlMock.assert_called_with(path_to_file),
+            None,
+        )
+        self.assertEqual(
+            html,
+            htmlMock.return_value
+        )
+
+    def test_import_file_exits_gracefully_if_extension_unknown(self):
+        '''Required to ensure that the import_file method doesn't crash if
+        the extension is unknown'''
+        path_to_file = '/path/to/file.unknown_extension'
+        with self.assertRaises(UnknownExtension):
+            self.git2sc.import_file(path_to_file)
+
     def test_can_delete_articles(self):
         '''Required to ensure that the delete_page method posts to the
         correct api endpoint with the correct data structure'''
@@ -333,6 +438,7 @@ class TestGit2SC_requests_error(unittest.TestCase):
         desired structure inside the print when a requests instance has a
         return code different from 200'''
 
+        self.requests_object.status_code = 400
         self.requests_object.text = json.dumps({
             'statusCode': 400,
             'message': 'Error message',
@@ -349,6 +455,7 @@ class TestGit2SC_requests_error(unittest.TestCase):
         '''Required to ensure that the _requests_error method does nothing
         if the return code is 200'''
 
+        self.requests_object.status_code = 200
         self.requests_object.text = json.dumps({
             'statusCode': 200,
             'message': 'Error message',

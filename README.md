@@ -22,7 +22,7 @@ Set up the credentials in the environment variables:
 ## Update an article
 
 This command will update the confluence article with id `{{ article_id }}` with
-the HTML string `{{ content }}`.
+the content of the file in the path `{{ content }}`.
 
 ```bash
 git2sc article update {{ article_id }} {{ content }}
@@ -31,7 +31,8 @@ git2sc article update {{ article_id }} {{ content }}
 ## Create an article
 
 This command will create an confluence article under the `{{ space }}` space,
-with title `{{ title }}` and with the HTML string `{{ content }}`.
+with title `{{ title }}` and with the content of the file in the path `{{
+content }}`.
 
 ```bash
 git2sc article create {{ space }} {{ title }} {{ content }}

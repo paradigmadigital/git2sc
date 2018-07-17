@@ -94,12 +94,13 @@ class TestMain(unittest.TestCase):
         )
         self.assertTrue(self.git2sc.called)
 
-    def test_article_update_subcommand(self):
+    def test_article_update_subcommand_with_html(self):
         '''Required to ensure that the main program reacts as expected when
         called with the update page arguments'''
 
         self.args.subcommand = 'article'
         self.args.article_command = 'update'
+        self.args.html = True
         self.args.article_id = '1'
         self.args.content = '<p> This is a test </p>'
 
@@ -112,13 +113,14 @@ class TestMain(unittest.TestCase):
             None
         )
 
-    def test_article_create_subcommand(self):
+    def test_article_create_subcommand_with_html(self):
         self.args.subcommand = 'article'
         self.args.article_command = 'create'
         self.args.title = 'new article'
         self.args.space = 'TST'
         self.args.content = '<p>New article!</p>'
         self.args.parent_id = None
+        self.args.html = True
 
         main()
         self.assertEqual(
@@ -131,13 +133,14 @@ class TestMain(unittest.TestCase):
             None
         )
 
-    def test_article_create_children_article(self):
+    def test_article_create_children_article_with_html(self):
         self.args.subcommand = 'article'
         self.args.article_command = 'create'
         self.args.title = 'new article'
         self.args.parent_id = '1111'
         self.args.space = 'TST'
         self.args.content = '<p>New article!</p>'
+        self.args.html = True
 
         main()
         self.assertEqual(
@@ -146,6 +149,59 @@ class TestMain(unittest.TestCase):
                 self.args.title,
                 self.args.content,
                 self.args.parent_id,
+            ),
+            None
+        )
+
+    def test_article_update_subcommand_with_file(self):
+        '''Required to ensure that by default the update command expects a path
+        to a file containing the article'''
+        self.args.subcommand = 'article'
+        self.args.article_command = 'update'
+        self.args.html = False
+        self.args.article_id = '1'
+        self.args.content = '/path/to/file'
+
+        main()
+        self.assertEqual(
+            self.git2sc.return_value.import_file.assert_called_with(
+                self.args.content,
+            ),
+            None
+        )
+        self.assertEqual(
+            self.git2sc.return_value.update_page.assert_called_with(
+                self.args.article_id,
+                self.git2sc.return_value.import_file.return_value,
+            ),
+            None
+        )
+
+    def test_article_create_subcommand_with_file(self):
+        '''Required to ensure that by default the create command expects a path
+        to a file containing the article'''
+        self.args.subcommand = 'article'
+        self.args.article_command = 'create'
+        self.args.title = 'new article'
+        self.args.space = 'TST'
+        self.args.content = '/path/to/file'
+        self.args.parent_id = None
+        self.args.html = False
+
+        main()
+        self.assertEqual(
+            self.git2sc.return_value.import_file.assert_called_with(
+                self.args.content,
+            ),
+            None
+        )
+        self.assertEqual(
+            self.git2sc.return_value.create_page.assert_called_with(
+                self.args.space,
+                self.args.title,
+                self.git2sc.return_value.import_file.return_value,
+                self.args.parent_id,
+
             ),
             None
         )
