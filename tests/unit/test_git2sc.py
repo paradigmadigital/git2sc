@@ -287,7 +287,7 @@ class TestGit2SC(unittest.TestCase):
     def test_can_process_adoc(self, subprocessMock, shlexMock, osMock):
         '''Required to ensure that we can transform adoc files to html'''
         path_to_file = '/path/to/file'
-        result = self.g._process_adoc(path_to_file)
+        result = self.git2sc._process_adoc(path_to_file)
 
         self.assertEqual(
             shlexMock.quote.assert_called_with(path_to_file),
@@ -325,7 +325,7 @@ class TestGit2SC(unittest.TestCase):
     def test_can_process_html(self, openMock, shlexMock, osMock):
         '''Required to ensure that we can load html files'''
         path_to_file = '/path/to/file'
-        result = self.g._process_html(path_to_file)
+        result = self.git2sc._process_html(path_to_file)
 
         self.assertEqual(
             shlexMock.quote.assert_called_with(path_to_file),
@@ -354,7 +354,7 @@ class TestGit2SC(unittest.TestCase):
         '''Required to ensure that the import_file method as a wrapper
         of the _process_* recognizes asciidoc files'''
         path_to_file = '/path/to/file.adoc'
-        html = self.g.import_file(path_to_file)
+        html = self.git2sc.import_file(path_to_file)
         self.assertEqual(
             adocMock.assert_called_with(path_to_file),
             None,
@@ -369,7 +369,7 @@ class TestGit2SC(unittest.TestCase):
         '''Required to ensure that the import_file method as a wrapper
         of the _process_* recognizes html files'''
         path_to_file = '/path/to/file.html'
-        html = self.g.import_file(path_to_file)
+        html = self.git2sc.import_file(path_to_file)
         self.assertEqual(
             htmlMock.assert_called_with(path_to_file),
             None,
@@ -378,12 +378,13 @@ class TestGit2SC(unittest.TestCase):
             html,
             htmlMock.return_value
         )
+
     def test_import_file_exits_gracefully_if_extension_unknown(self):
         '''Required to ensure that the import_file method doesn't crash if
         the extension is unknown'''
         path_to_file = '/path/to/file.unknown_extension'
         with self.assertRaises(UnknownExtension):
-            self.g.import_file(path_to_file)
+            self.git2sc.import_file(path_to_file)
 
 
 class TestGit2SC_requests_error(unittest.TestCase):
