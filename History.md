@@ -1,4 +1,10 @@
 
+0.3.0 / 2018-07-10
+==================
+
+  * Create _requests_error to print the confluence error
+  * Added docstrings to the tests
+
 0.2.0 / 2018-07-10
 ==================
 

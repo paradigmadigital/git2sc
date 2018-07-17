@@ -10,6 +10,17 @@ class Git2SC():
         self.auth = tuple(auth.split(':'))
         self.pages = {}
 
+    def _requests_error(self, requests_object):
+        '''Print the confluence error'''
+
+        response = json.loads(requests_object.text)
+
+        if response['statusCode'] != 200:
+            print('Error {}: {}'.format(
+                response['statusCode'],
+                response['message'],
+            ))
+
     def get_page_info(self, pageid):
         '''Get all the information of a confluence page'''
 
@@ -17,7 +28,7 @@ class Git2SC():
             .format(base=self.api_url, pageid=pageid)
 
         r = requests.get(url, auth=self.auth)
-        r.raise_for_status()
+        self._requests_error(r)
         return r.json()
 
     def get_space_homepage(self, spaceid):
@@ -27,9 +38,9 @@ class Git2SC():
             base=self.api_url,
             spaceid=spaceid,
         )
-        req = requests.get(url, auth=self.auth)
-        req.raise_for_status()
-        return req.json()['_expandable']['homepage'].split('/')[4]
+        r = requests.get(url, auth=self.auth)
+        self._requests_error(r)
+        return r.json()['_expandable']['homepage'].split('/')[4]
 
     def get_space_articles(self, spaceid):
         '''Get all the pages of a confluence space'''
@@ -40,7 +51,7 @@ class Git2SC():
                 spaceid=spaceid,
             )
         r = requests.get(url, auth=self.auth)
-        r.raise_for_status()
+        self._requests_error(r)
         self.pages = {}
         for page in r.json()['results']:
             self.pages[page['id']] = page
@@ -89,7 +100,7 @@ class Git2SC():
             headers={'Content-Type': 'application/json'}
         )
 
-        r.raise_for_status()
+        self._requests_error(r)
 
         print("Wrote '%s' version %d" % (self.pages[pageid]['title'], version))
 
@@ -122,4 +133,4 @@ class Git2SC():
             headers={'Content-Type': 'application/json'}
         )
 
-        r.raise_for_status()
+        self._requests_error(r)
