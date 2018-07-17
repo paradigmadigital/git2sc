@@ -7,6 +7,8 @@ class TestArgparse(unittest.TestCase):
         self.parser = load_parser()
 
     def test_has_subcommand_article_update(self):
+        '''Required to ensure that the parser is correctly configured to
+        update an article as expected'''
         parsed = self.parser.parse_args(
             ['article', 'update', '--html', '1', '<p>Updated article</p>']
         )
