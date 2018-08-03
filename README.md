@@ -9,6 +9,7 @@ git clone https://git.paradigmadigital.com/seguridad/git2sc
 cd git2sc
 virtualenv -p python3 git2sc
 source git2sc/bin/activate
+pip3 install -r requirements.txt
 python3 setup.py install
 ```
 
