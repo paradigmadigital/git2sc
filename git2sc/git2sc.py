@@ -191,6 +191,42 @@ class Git2SC():
             ))
         return html
 
+    def directory_full_upload(
+        self,
+        space,
+        path,
+        excluded_directories,
+        parent_id=None
+    ):
+        '''Takes a path to a directory and crawls all the subdirectories and
+        files and uploads them to confluence.
+
+        The uploaded files are the ones supported by the import_file method.
+
+        Optionally you can set up a parent_id to create the confluence structure
+        hanging below a confluence article id
+        '''
+
+        is_root_directory = True
+        for root, directories, files in os.walk('.'):
+            if is_root_directory:
+                self._process_mainpage()
+                is_root_directory = False
+            else:
+                parent_id = self.import_directory_readme(root)
+
+            for file in files:
+                self.create_page(
+                    space,
+                    file.split('.')[:-1],
+                    self.import_file(file),
+                    parent_id,
+                )
+
+            for directory in directories:
+                if directory in excluded_directories:
+                    directories.remove(directory)
+
 
 class UnknownExtension(Exception):
     pass

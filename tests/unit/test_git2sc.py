@@ -455,27 +455,139 @@ class TestGit2SC(unittest.TestCase):
         self.assertTrue(self.requests_error.called)
 
     @patch('git2sc.git2sc.Git2SC.create_page')
-    @patch('git2sc.git2sc.Git2SC._process_adoc')
-    @patch('git2sc.git2sc.Git2SC._process_md')
-    def test_can_full_upload_repository(
-        self,
-        importmdMock,
-        importadocMock,
-        createpageMock,
-    ):
+    @patch('git2sc.git2sc.Git2SC.import_file')
+    def test_can_full_upload_directory(self, importfileMock, createpageMock,):
         '''Given a directory path test that git2sc crawls all the files and
-        uploads them to confluence'''
+        uploads them to confluence.
 
-        self.git2sc.full_upload('tests/data/repository_example', 'Space')
-        # Assert that the parent directories are created
+        The repository structure is under tests/data:
+        └── repository_example
+            ├── formation
+            │   ├── ansible
+            │   │   ├── molecule
+            │   │   │   ├── child_child_doc.adoc
+            │   │   │   └── README.md
+            │   │   └── README.md
+            │   ├── formation_guide.adoc
+            │   └── README.md
+            ├── .git
+            │   └── git_file
+            ├── parent_article.adoc
+            └── README.md
+
+        It should ignore the .git directory as it's in the excluded
+        '''
+
+        def create_side_effect(space, name, path):
+            return 'id_{}'
+
+        excluded_directories = ['.git']
+        createpageMock.side_effect = create_side_effect
+
+        self.git2sc.directory_full_upload(
+            'Space',
+            'tests/data/repository_example',
+            excluded_directories,
+        )
+
+        # Assert that the root directories are created
         self.assertEqual(
             createpageMock.assert_called_with(
                 'Space',
                 'formation',
-                importmdMock.return_value
-                ),
+                importfileMock.return_value
+            ),
             None
         )
+
+        # Assert that the root files are created
+        self.assertEqual(
+            createpageMock.assert_called_with(
+                'Space',
+                'parent_article',
+                importfileMock.return_value,
+            ),
+            None
+        )
+        self.assertEqual(
+            createpageMock.assert_called_with(
+                'Space',
+                'repository_example',
+                importfileMock.return_value,
+            ),
+            None
+        )
+
+        # Assert that the excluded directories are not called
+        self.assertFalse(
+            createpageMock.assert_called_with(
+                'Space',
+                '.git',
+                importfileMock.return_value,
+            ),
+        )
+        self.assertFalse(
+            createpageMock.assert_called_with(
+                'Space',
+                'git_file',
+                importfileMock.return_value,
+            ),
+        )
+
+        # Assert formation childs are created
+
+        self.assertEqual(
+            createpageMock.assert_called_with(
+                'Space',
+                'ansible',
+                importfileMock.return_value,
+                'id_formation',
+            ),
+            None
+        )
+        self.assertEqual(
+            createpageMock.assert_called_with(
+                'Space',
+                'formation_guide',
+                importfileMock.return_value,
+                'id_formation',
+            ),
+            None
+        )
+
+        # Assert ansible childs are created
+
+        self.assertEqual(
+            createpageMock.assert_called_with(
+                'Space',
+                'molecule',
+                importfileMock.return_value,
+                'id_ansible',
+            ),
+            None
+        )
+
+        # Assert molecule childs are created
+
+        self.assertEqual(
+            createpageMock.assert_called_with(
+                'Space',
+                'child_child_doc',
+                importfileMock.return_value,
+                'id_molecule',
+            ),
+            None
+        )
+
+    @patch('git2sc.git2sc.Git2SC.create_page')
+    @patch('git2sc.git2sc.Git2SC.import_file')
+    @pytest.mark.skip('Not yet implemented')
+    def test_can_full_upload_directory_hanging_from_parent_article(
+        self,
+        importfileMock,
+        createpageMock,
+    ):
+        pass
 
 
 class TestGit2SC_requests_error(unittest.TestCase):
