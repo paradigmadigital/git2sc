@@ -39,16 +39,17 @@ def main():
     g = Git2SC(api_url, auth)
 
     if args.subcommand == 'article':
-        if args.html:
-            html = args.content
-        else:
-            html = g.import_file(args.content)
-        if args.article_command == 'update':
-            g.update_page(args.article_id, html)
-        elif args.article_command == 'create':
-            g.create_page(args.space, args.title, html, args.parent_id)
-        elif args.article_command == 'delete':
+        if args.article_command == 'delete':
             g.delete_page(args.article_id)
+        else:
+            if args.html:
+                html = args.content
+            else:
+                html = g.import_file(args.content)
+            if args.article_command == 'update':
+                g.update_page(args.article_id, html)
+            elif args.article_command == 'create':
+                g.create_page(args.space, args.title, html, args.parent_id)
 
 
 if __name__ == "__main__":
