@@ -137,6 +137,7 @@ class Git2SC():
         )
 
         self._requests_error(r)
+        return json.loads(r.text)['id']
 
     def delete_page(self, pageid):
         '''Delete a confluence page given the pageid'''

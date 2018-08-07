@@ -1,4 +1,5 @@
 import json
+import pytest
 import unittest
 from unittest.mock import patch, Mock
 from git2sc.git2sc import Git2SC, UnknownExtension
@@ -222,7 +223,9 @@ class TestGit2SC(unittest.TestCase):
         inheritance is set'''
 
         html = '<p> This is a new page </p>'
-        self.git2sc.create_page('TST', 'new title', html)
+        self.requests.post.return_value.text = \
+            '{"id":"412254212","type":"page"}'
+        page_id = self.git2sc.create_page('TST', 'new title', html)
 
         data_json = json.dumps({
             'type': 'page',
@@ -246,6 +249,7 @@ class TestGit2SC(unittest.TestCase):
             None,
         )
         self.assertTrue(self.requests_error.called)
+        self.assertEqual(page_id, '412254212')
 
     def test_can_create_articles_as_a_child(self):
         '''Required to ensure that the create_page method posts to the
@@ -254,7 +258,9 @@ class TestGit2SC(unittest.TestCase):
 
         html = '<p> This is a new page </p>'
         parent_id = '372274410'
-        self.git2sc.create_page('TST', 'new title', html, parent_id)
+        self.requests.post.return_value.text = \
+            '{"id":"412254212","type":"page"}'
+        page_id = self.git2sc.create_page('TST', 'new title', html, parent_id)
 
         data_json = json.dumps({
             'type': 'page',
@@ -280,6 +286,7 @@ class TestGit2SC(unittest.TestCase):
             None,
         )
         self.assertTrue(self.requests_error.called)
+        self.assertEqual(page_id, '412254212')
 
     @patch('git2sc.git2sc.os')
     @patch('git2sc.git2sc.shlex')
@@ -415,6 +422,22 @@ class TestGit2SC(unittest.TestCase):
 
         self.assertTrue(self.requests_error.called)
 
+    @pytest.mark.skip('Not yet implemented, this is the final test')
+    def test_can_full_upload_repository(self):
+        '''Given a directory path test that git2sc crawls all the files and
+        uploads them to confluence'''
+
+        self.git2sc.full_upload('/path/to/directory')
+
+    @pytest.mark.skip('Not yet implemented, first return id from create_page')
+    def test_full_upload_can_get_a_list_of_tasks(self):
+        '''Given a directory path test that git2sc crawls all the files and
+        uploads them to confluence'''
+
+        self.git2sc.full_upload('/path/to/directory')
+
+
+
 
 class TestGit2SC_requests_error(unittest.TestCase):
     '''Test class for the Git2SC _requests_error method'''
@@ -462,3 +485,4 @@ class TestGit2SC_requests_error(unittest.TestCase):
         })
         self.git2sc._requests_error(self.requests_object)
         self.assertFalse(self.print.called)
+
