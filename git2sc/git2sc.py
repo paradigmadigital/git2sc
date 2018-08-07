@@ -151,6 +151,12 @@ class Git2SC():
         if r.status_code is not 204:
             self._requests_error(r)
 
+    def _safe_load_file(self, file_path):
+        '''Takes a file path and loads it in a safe way evading posible
+        injections'''
+
+        return os.path.expanduser(shlex.quote(file_path))
+
     def _process_adoc(self, adoc_file_path):
         '''Takes a path to an adoc file, transform it and return it as
         html'''
@@ -160,7 +166,7 @@ class Git2SC():
         * autoclose </meta> </link> </img> </br> </col>
         '''
 
-        clean_path = os.path.expanduser(shlex.quote(adoc_file_path))
+        clean_path = self._safe_load_file(adoc_file_path)
 
         # Confluence doesn't like the <!DOCTYPE html> line, therefore
         # the split('/n')
@@ -169,9 +175,27 @@ class Git2SC():
             shell=False,
         ).decode().replace('<!DOCTYPE html>\n', '')
 
+    def _process_md(self, adoc_file_path):
+        '''Takes a path to an md file, transform it and return it as
+        html'''
+
+        '''Clean the html for shitty confluence
+        *
+        * autoclose </meta> </link> </img> </br> </col>
+        '''
+
+        clean_path = self._safe_load_file(adoc_file_path)
+
+        # Confluence doesn't like the <!DOCTYPE html> line, therefore
+        # the split('/n')
+        return subprocess.check_output(
+            ['pandoc', clean_path, '-t', 'html', '-o', '-'],
+            shell=False,
+        ).decode()
+
     def _process_html(self, html_file_path):
         '''Takes a path to an html file and returns it'''
-        clean_path = os.path.expanduser(shlex.quote(html_file_path))
+        clean_path = self._safe_load_file(html_file_path)
         with open(clean_path, 'r') as f:
             return f.read()
 
@@ -183,6 +207,8 @@ class Git2SC():
             html = self._process_adoc(file_path)
         elif extension == '.html':
             html = self._process_html(file_path)
+        elif extension == '.md':
+            html = self._process_md(file_path)
         else:
             raise UnknownExtension('Extension {} of file {} not known'.format(
                 extension,
