@@ -518,10 +518,12 @@ class TestGit2SC(unittest.TestCase):
 
     @patch('git2sc.git2sc.Git2SC.create_page', autospect=True)
     @patch('git2sc.git2sc.Git2SC._process_directory_readme', autospect=True)
+    @patch('git2sc.git2sc.Git2SC._process_mainpage', autospect=True)
     @patch('git2sc.git2sc.Git2SC.import_file', autospect=True)
     def test_can_full_upload_directory(
         self,
         importfileMock,
+        mainpageMock,
         readmeMock,
         createpageMock,
     ):
@@ -536,6 +538,8 @@ class TestGit2SC(unittest.TestCase):
             │   │   │   ├── child_child_doc.adoc
             │   │   │   └── README.md
             │   │   └── README.md
+            │   ├── excluded_dir
+            │   │   └── excluded_file
             │   ├── formation_guide.adoc
             │   └── README.md
             ├── .git
@@ -543,15 +547,17 @@ class TestGit2SC(unittest.TestCase):
             ├── parent_article.adoc
             └── README.md
 
-        It should ignore the .git directory as it's in the excluded
+        It should ignore the .git and excluded_dir directories as they are in
+        the excluded list
         '''
 
         def create_side_effect(directory_name, parent_id=None):
             return 'id_{}'.format(os.path.basename(directory_name))
 
-        excluded_directories = ['.git']
+        excluded_directories = ['.git', 'excluded_dir']
         readmeMock.side_effect = create_side_effect
         self.os.walk.side_effect = os.walk
+        self.os.path.basename.side_effect = os.path.basename
 
         self.git2sc.directory_full_upload(
             'tests/data/repository_example',
@@ -574,14 +580,14 @@ class TestGit2SC(unittest.TestCase):
         self.assertEqual(
             createpageMock.mock_calls,
             [
-                call(['parent_article'], importfileMock.return_value, None),
+                call('parent_article', importfileMock.return_value, None),
                 call(
-                    ['formation_guide'],
+                    'formation_guide',
                     importfileMock.return_value,
                     'id_formation'
                 ),
                 call(
-                    ['child_child_doc'],
+                    'child_child_doc',
                     importfileMock.return_value,
                     'id_molecule'
                 )
@@ -589,7 +595,7 @@ class TestGit2SC(unittest.TestCase):
         )
 
         # Assert that the homepage is created
-        self.assertTrue(False)
+        self.assertEqual(mainpageMock.assert_called_with(), None)
 
     @patch('git2sc.git2sc.Git2SC.create_page', autospect=True)
     @patch('git2sc.git2sc.Git2SC.import_file', autospect=True)
@@ -635,18 +641,12 @@ class TestGit2SC(unittest.TestCase):
             None,
         )
 
-    @patch('git2sc.git2sc.Git2SC.create_page', autospect=True)
     @patch('git2sc.git2sc.Git2SC.import_file', autospect=True)
-    def test_can_process_directory_readme_adoc(
-        self,
-        importfileMock,
-        createpageMock,
-    ):
-        '''Given a directory path test that git2sc creates a page with the
-        contents of README.adoc being the title the name of the directory'''
+    def test_can_discover_directory_readme_adoc(self, importfileMock):
+        '''Given a directory path test that git2sc returns the html of the
+        README.adoc file'''
 
         directory_path = '/path/to/directory'
-        createpageMock.return_value = '372223610'
         self.os.path.join.side_effect = os.path.join
         self.os.path.basename.side_effect = os.path.basename
 
@@ -658,7 +658,7 @@ class TestGit2SC(unittest.TestCase):
 
         self.os.path.isfile.side_effect = true_if_adoc
 
-        result = self.git2sc._process_directory_readme(directory_path)
+        result = self.git2sc._discover_directory_readme(directory_path)
 
         self.assertTrue(
             call(directory_path, 'README.adoc')
@@ -670,30 +670,16 @@ class TestGit2SC(unittest.TestCase):
             None,
         )
         self.assertEqual(
-            createpageMock.assert_called_with(
-                'directory',
-                importfileMock.return_value,
-                None,
-            ),
-            None
-        )
-        self.assertEqual(
             result,
-            createpageMock.return_value,
+            importfileMock.return_value
         )
 
-    @patch('git2sc.git2sc.Git2SC.create_page', autospect=True)
     @patch('git2sc.git2sc.Git2SC.import_file', autospect=True)
-    def test_can_process_directory_readme_md(
-        self,
-        importfileMock,
-        createpageMock,
-    ):
-        '''Given a directory path test that git2sc creates a page with the
-        contents of README.md being the title the name of the directory'''
+    def test_can_discover_directory_readme_md(self, importfileMock):
+        '''Given a directory path test that git2sc returns the html of the
+        README.md file'''
 
         directory_path = '/path/to/directory'
-        createpageMock.return_value = '372223610'
         self.os.path.join.side_effect = os.path.join
         self.os.path.basename.side_effect = os.path.basename
 
@@ -705,7 +691,7 @@ class TestGit2SC(unittest.TestCase):
 
         self.os.path.isfile.side_effect = true_if_md
 
-        result = self.git2sc._process_directory_readme(directory_path)
+        result = self.git2sc._discover_directory_readme(directory_path)
 
         self.assertTrue(
             call(directory_path, 'README.md')
@@ -717,9 +703,37 @@ class TestGit2SC(unittest.TestCase):
             None,
         )
         self.assertEqual(
+            result,
+            importfileMock.return_value
+        )
+
+    @patch('git2sc.git2sc.Git2SC.create_page', autospect=True)
+    @patch('git2sc.git2sc.Git2SC._discover_directory_readme', autospect=True)
+    def test_can_process_directory_readme(
+        self,
+        discoverreadmeMock,
+        createpageMock,
+    ):
+        '''Given a directory path test that git2sc creates a page with the
+        contents of README being the title the name of the directory'''
+
+        directory_path = '/path/to/directory'
+        createpageMock.return_value = '372223610'
+        self.os.path.join.side_effect = os.path.join
+        self.os.path.basename.side_effect = os.path.basename
+
+        result = self.git2sc._process_directory_readme(directory_path)
+
+        self.assertEqual(
+            discoverreadmeMock.assert_called_with(
+                '/path/to/directory',
+            ),
+            None,
+        )
+        self.assertEqual(
             createpageMock.assert_called_with(
                 'directory',
-                importfileMock.return_value,
+                discoverreadmeMock.return_value,
                 None,
             ),
             None

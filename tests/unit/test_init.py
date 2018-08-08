@@ -1,4 +1,5 @@
 import unittest
+import pytest
 from unittest.mock import patch, PropertyMock
 
 from git2sc import main
@@ -16,13 +17,14 @@ class TestMain(unittest.TestCase):
         )
         type(self.os).environ = self.env
 
-        self.load_parser_patch = patch('git2sc.load_parser')
+        self.load_parser_patch = patch('git2sc.load_parser', autospect=True)
         self.load_parser = self.load_parser_patch.start()
         self.args = self.load_parser.return_value.parse_args.return_value
 
-        self.print_patch = patch('git2sc.print')
+        self.print_patch = patch('git2sc.print', autospect=True)
         self.print = self.print_patch.start()
 
+        self.args.space = 'TST'
         self.git2sc_patch = patch('git2sc.Git2SC', autospect=True)
         self.git2sc = self.git2sc_patch.start()
 
@@ -89,6 +91,7 @@ class TestMain(unittest.TestCase):
             self.git2sc.assert_called_with(
                 'https://confluence.sucks.com/wiki/rest/api',
                 'user:password',
+                'TST',
             ),
             None,
         )
@@ -117,7 +120,6 @@ class TestMain(unittest.TestCase):
         self.args.subcommand = 'article'
         self.args.article_command = 'create'
         self.args.title = 'new article'
-        self.args.space = 'TST'
         self.args.content = '<p>New article!</p>'
         self.args.parent_id = None
         self.args.html = True
@@ -125,7 +127,6 @@ class TestMain(unittest.TestCase):
         main()
         self.assertEqual(
             self.git2sc.return_value.create_page.assert_called_with(
-                self.args.space,
                 self.args.title,
                 self.args.content,
                 self.args.parent_id,
@@ -138,14 +139,12 @@ class TestMain(unittest.TestCase):
         self.args.article_command = 'create'
         self.args.title = 'new article'
         self.args.parent_id = '1111'
-        self.args.space = 'TST'
         self.args.content = '<p>New article!</p>'
         self.args.html = True
 
         main()
         self.assertEqual(
             self.git2sc.return_value.create_page.assert_called_with(
-                self.args.space,
                 self.args.title,
                 self.args.content,
                 self.args.parent_id,
@@ -183,7 +182,6 @@ class TestMain(unittest.TestCase):
         self.args.subcommand = 'article'
         self.args.article_command = 'create'
         self.args.title = 'new article'
-        self.args.space = 'TST'
         self.args.content = '/path/to/file'
         self.args.parent_id = None
         self.args.html = False
@@ -197,7 +195,6 @@ class TestMain(unittest.TestCase):
         )
         self.assertEqual(
             self.git2sc.return_value.create_page.assert_called_with(
-                self.args.space,
                 self.args.title,
                 self.git2sc.return_value.import_file.return_value,
                 self.args.parent_id,
@@ -217,6 +214,22 @@ class TestMain(unittest.TestCase):
         self.assertEqual(
             self.git2sc.return_value.delete_page.assert_called_with(
                 self.args.article_id,
+            ),
+            None
+        )
+
+    def test_upload_directory_subcommand(self):
+        '''Required to ensure that the main program reacts as expected when
+        called with the upload directory arguments'''
+        self.args.subcommand = 'upload'
+        self.args.path = '/path/to/directory'
+        self.args.exclude = ['.git']
+
+        main()
+        self.assertEqual(
+            self.git2sc.return_value.directory_full_upload.assert_called_with(
+                self.args.path,
+                self.args.exclude
             ),
             None
         )

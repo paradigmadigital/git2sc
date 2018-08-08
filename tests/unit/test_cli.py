@@ -94,3 +94,31 @@ class TestArgparse(unittest.TestCase):
         self.assertEqual(parsed.subcommand, 'article')
         self.assertEqual(parsed.article_command, 'delete')
         self.assertEqual(parsed.article_id, '1')
+
+    def test_has_subcommand_upload_directory(self):
+        '''Required to ensure that the parser is correctly configured to
+        upload a directory'''
+        parsed = self.parser.parse_args(
+            [
+                'upload',
+                '/path/to/directory',
+                'TST',
+            ]
+        )
+        self.assertEqual(parsed.subcommand, 'upload')
+        self.assertEqual(parsed.path, '/path/to/directory')
+        self.assertEqual(parsed.exclude, ['.git'])
+
+    def test_has_subcommand_upload_directory_can_specify_excluded_dirs(self):
+        '''Required to ensure that the parser is correctly configured to
+        upload a directory with excluded directories'''
+        parsed = self.parser.parse_args(
+            [
+                'upload',
+                '/path/to/directory',
+                'TST',
+                '--exclude',
+                ['excluded_dir'],
+            ]
+        )
+        self.assertEqual(parsed.exclude, ['excluded_dir'])

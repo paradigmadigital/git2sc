@@ -75,5 +75,25 @@ def load_parser():
         help='Confluence article id',
     )
 
+    upload_parser = subcommand_parser.add_parser('upload')
+    upload_parser.add_argument(
+        "path",
+        type=str,
+        help='Path to directory',
+    )
+
+    upload_parser.add_argument(
+        "space",
+        type=str,
+        help='Confluence space id',
+    )
+
+    upload_parser.add_argument(
+        "--exclude",
+        type=list,
+        nargs='?',
+        default=['.git'],
+        help="List of directories to exclude",
+    )
     argcomplete.autocomplete(parser)
     return parser

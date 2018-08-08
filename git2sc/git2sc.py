@@ -202,9 +202,9 @@ class Git2SC():
         html = self.import_file(file_path)
         self.update_page(homepage, html)
 
-    def _process_directory_readme(self, directory_path, parent_id=None):
+    def _discover_directory_readme(self, directory_path, parent_id=None):
         '''Takes a directory path, searches for README.adoc or README.md and
-        creates a confluence page with that information'''
+        returns it's html'''
 
         adoc_file = os.path.join(directory_path, 'README.adoc')
         md_file = os.path.join(directory_path, 'README.md')
@@ -213,10 +213,14 @@ class Git2SC():
         elif os.path.isfile(md_file):
             readme_file = md_file
 
-        html = self.import_file(readme_file)
+        return self.import_file(readme_file)
+
+    def _process_directory_readme(self, directory_path, parent_id=None):
+        '''Takes a directory path, searches for README.adoc or README.md and
+        creates a confluence page with that information'''
         return self.create_page(
             os.path.basename(directory_path),
-            html,
+            self._discover_directory_readme(directory_path),
             parent_id,
         )
 
@@ -255,17 +259,20 @@ class Git2SC():
         is_root_directory = True
         for root, directories, files in os.walk(path):
             if is_root_directory and parent_id is None:
-                self._process_mainpage(self.space)
+                self._process_mainpage()
                 is_root_directory = False
             else:
                 parent_id = self._process_directory_readme(root)
 
             for file in files:
-                self.create_page(
-                    file.split('.')[:-1],
-                    self.import_file(file),
-                    parent_id,
-                )
+                filename = os.path.basename(file).split('.')[:-1][0]
+
+                if not filename == 'README':
+                    self.create_page(
+                        filename,
+                        self.import_file(file),
+                        parent_id,
+                    )
 
             for directory in directories:
                 if directory in excluded_directories:
