@@ -15,11 +15,13 @@ class TestGit2SC(unittest.TestCase):
 
         self.requests_patch = patch('git2sc.git2sc.requests')
         self.requests = self.requests_patch.start()
-
         self.requests_error_patch = patch(
             'git2sc.git2sc.Git2SC._requests_error',
         )
         self.requests_error = self.requests_error_patch.start()
+
+        self.json_patch = patch('git2sc.git2sc.json')
+        self.json = self.json_patch.start()
 
         self.os_patch = patch('git2sc.git2sc.os', autospect=True)
         self.os = self.os_patch.start()
@@ -27,6 +29,7 @@ class TestGit2SC(unittest.TestCase):
     def tearDown(self):
         self.requests_patch.stop()
         self.requests_error_patch.stop()
+        self.json_patch.stop()
         self.os_patch.stop()
 
     def test_has_auth_set(self):
@@ -153,9 +156,8 @@ class TestGit2SC(unittest.TestCase):
                 }
             ]
         }
-        self.git2sc.update_page(page_id, html)
 
-        data_json = json.dumps({
+        data = {
             'id': page_id,
             'type': 'page',
             'title': 'Test page title',
@@ -168,7 +170,11 @@ class TestGit2SC(unittest.TestCase):
                     'value': html,
                 }
             }
-        })
+        }
+        data_json = json.dumps(data)
+        self.json.dumps.return_value = data_json
+
+        self.git2sc.update_page(page_id, html)
 
         self.assertEqual(
             self.requests.put.assert_called_with(
@@ -184,9 +190,8 @@ class TestGit2SC(unittest.TestCase):
         )
         self.assertTrue(self.requests_error.called)
 
-    @patch('git2sc.git2sc.json')
     @patch('git2sc.git2sc.Git2SC.get_page_info')
-    def test_can_update_articles_not_in_pages(self, getPageInfoMock, jsonMock):
+    def test_can_update_articles_not_in_pages(self, getPageInfoMock):
         '''Required to ensure that the update_page method can update a page
         even though the pages attribute is empty'''
 
@@ -226,9 +231,8 @@ class TestGit2SC(unittest.TestCase):
         inheritance is set'''
 
         html = '<p> This is a new page </p>'
-        self.git2sc.create_page('TST', 'new title', html)
 
-        data_json = json.dumps({
+        requests_data = {
             'type': 'page',
             'title': 'new title',
             'space': {'key': 'TST'},
@@ -238,12 +242,20 @@ class TestGit2SC(unittest.TestCase):
                     'representation': 'storage'
                 },
             },
-        })
+        }
+        requests_data_json = json.dumps(requests_data)
+        self.json.dumps.return_value = requests_data_json
 
+        self.git2sc.create_page('TST', 'new title', html)
+
+        self.assertEqual(
+            self.json.dumps.assert_called_with(requests_data),
+            None,
+        )
         self.assertEqual(
             self.requests.post.assert_called_with(
                 '{}/content'.format(self.api_url),
-                data=data_json,
+                data=requests_data_json,
                 auth=self.auth,
                 headers={'Content-Type': 'application/json'},
             ),
@@ -258,26 +270,32 @@ class TestGit2SC(unittest.TestCase):
 
         html = '<p> This is a new page </p>'
         parent_id = '372274410'
-        self.git2sc.create_page('TST', 'new title', html, parent_id)
 
-        data_json = json.dumps({
+        requests_data = {
             'type': 'page',
+            'ancestors': [{'id': parent_id}],
             'title': 'new title',
             'space': {'key': 'TST'},
-
-            'ancestors': [{'id': parent_id}],
             'body': {
                 'storage': {
                     'value': html,
                     'representation': 'storage'
                 },
             },
-        })
+        }
+        requests_data_json = json.dumps(requests_data)
+        self.json.dumps.return_value = requests_data_json
 
+        self.git2sc.create_page('TST', 'new title', html, parent_id)
+
+        self.assertEqual(
+            self.json.dumps.assert_called_with(requests_data),
+            None,
+        )
         self.assertEqual(
             self.requests.post.assert_called_with(
                 '{}/content'.format(self.api_url),
-                data=data_json,
+                data=requests_data_json,
                 auth=self.auth,
                 headers={'Content-Type': 'application/json'},
             ),
