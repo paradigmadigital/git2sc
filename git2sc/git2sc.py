@@ -8,9 +8,10 @@ import subprocess
 class Git2SC():
     '''Class to sync a git documentation repository to Confluence.'''
 
-    def __init__(self, confluence_api_url, auth):
+    def __init__(self, confluence_api_url, auth, space_id):
         self.api_url = confluence_api_url
         self.auth = tuple(auth.split(':'))
+        self.space = space_id
         self.pages = {}
 
     def _requests_error(self, requests_object):
@@ -36,24 +37,24 @@ class Git2SC():
         self._requests_error(r)
         return r.json()
 
-    def get_space_homepage(self, spaceid):
+    def get_space_homepage(self):
         '''Get the homepage of a confluence space'''
 
         url = '{base}/space/{spaceid}'.format(
             base=self.api_url,
-            spaceid=spaceid,
+            spaceid=self.space,
         )
         r = requests.get(url, auth=self.auth)
         self._requests_error(r)
         return r.json()['_expandable']['homepage'].split('/')[4]
 
-    def get_space_articles(self, spaceid):
+    def get_space_articles(self):
         '''Get all the pages of a confluence space'''
 
         url = '{base}/content/?spaceKey={spaceid}'\
             '?expand=ancestors,body.storage,version'.format(
                 base=self.api_url,
-                spaceid=spaceid,
+                spaceid=self.space,
             )
         r = requests.get(url, auth=self.auth)
         self._requests_error(r)
@@ -107,13 +108,13 @@ class Git2SC():
 
         self._requests_error(r)
 
-    def create_page(self, space, title, html, parent_id=None):
+    def create_page(self, title, html, parent_id=None):
         '''Create a confluence page with the content of the html variable'''
 
         data = {
             'type': 'page',
             'title': title,
-            'space': {'key': space},
+            'space': {'key': self.space},
             'body': {
                 'storage': {
                     'value': html,
