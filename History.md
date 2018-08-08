@@ -1,4 +1,14 @@
 
+0.5.2 / 2018-08-07
+==================
+
+  * Mock json in tests to avoid random break
+
+0.5.1 / 2018-08-03
+==================
+
+  * Make sure delete doesn't allow html
+
 0.5.0 / 2018-07-12
 ==================
 
