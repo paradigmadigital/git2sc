@@ -5,6 +5,21 @@
   * Add markdown support
   * Refactored the loading of files to _safe_load_file
 
+0.5.4 / 2018-08-08
+==================
+
+  * Refactored space as a class attribute
+
+0.5.3 / 2018-08-08
+==================
+
+  * Refactored os as an attribute
+
+0.5.2 / 2018-08-07
+==================
+
+  * Mock json in tests to avoid random break
+
 0.5.1 / 2018-08-03
 ==================
 
