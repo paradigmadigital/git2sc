@@ -356,8 +356,8 @@ class TestGit2SC(unittest.TestCase):
         )
 
     @patch('git2sc.git2sc.Git2SC._safe_load_file')
-    @patch('git2sc.git2sc.subprocess')
-    def test_can_process_md(self, subprocessMock, loadfileMock):
+    @patch('git2sc.git2sc.pypandoc')
+    def test_can_process_md(self, pypandocMock, loadfileMock):
         '''Required to ensure that we can transform md files to html'''
         path_to_file = '/path/to/file'
         result = self.git2sc._process_md(path_to_file)
@@ -367,22 +367,15 @@ class TestGit2SC(unittest.TestCase):
             None,
         )
         self.assertEqual(
-            subprocessMock.check_output.assert_called_with(
-                [
-                    'pandoc',
-                    loadfileMock.return_value,
-                    '-t',
-                    'html',
-                    '-o',
-                    '-',
-                ],
-                shell=False,
+            pypandocMock.convert_file.assert_called_with(
+                loadfileMock.return_value,
+                'html',
             ),
             None,
         )
         self.assertEqual(
             result,
-            subprocessMock.check_output.return_value.decode.return_value
+            pypandocMock.convert_file.return_value
         )
 
     @patch('git2sc.git2sc.Git2SC._process_adoc')

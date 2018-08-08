@@ -1,7 +1,8 @@
 import os
 import json
-import requests
 import shlex
+import requests
+import pypandoc
 import subprocess
 
 
@@ -179,19 +180,9 @@ class Git2SC():
         '''Takes a path to an md file, transform it and return it as
         html'''
 
-        '''Clean the html for shitty confluence
-        *
-        * autoclose </meta> </link> </img> </br> </col>
-        '''
-
         clean_path = self._safe_load_file(adoc_file_path)
 
-        # Confluence doesn't like the <!DOCTYPE html> line, therefore
-        # the split('/n')
-        return subprocess.check_output(
-            ['pandoc', clean_path, '-t', 'html', '-o', '-'],
-            shell=False,
-        ).decode()
+        return pypandoc.convert_file(clean_path, 'html')
 
     def _process_html(self, html_file_path):
         '''Takes a path to an html file and returns it'''
