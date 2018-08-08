@@ -177,16 +177,11 @@ class Git2SC():
             shell=False,
         ).decode().replace('<!DOCTYPE html>\n', '')
 
-    def _process_md(self, adoc_file_path):
+    def _process_md(self, md_file_path):
         '''Takes a path to an md file, transform it and return it as
         html'''
 
-        '''Clean the html for shitty confluence
-        *
-        * autoclose </meta> </link> </img> </br> </col>
-        '''
-
-        clean_path = self._safe_load_file(adoc_file_path)
+        clean_path = self._safe_load_file(md_file_path)
 
         # Confluence doesn't like the <!DOCTYPE html> line, therefore
         # the split('/n')
@@ -206,6 +201,17 @@ class Git2SC():
         homepage = self.get_space_homepage()
         html = self.import_file(file_path)
         self.update_page(homepage, html)
+
+    def _process_directory_readme(self, directory_path):
+        '''Takes a directory path, searches for README.adoc or README.md and
+        creates a confluence page with that information'''
+
+        adoc_file = os.path.join(directory_path, 'README.adoc')
+        if os.path.isfile(adoc_file):
+            readme_file = adoc_file
+
+        html = self.import_file(readme_file)
+        self.create_page('README', html)
 
     def import_file(self, file_path):
         '''Takes a path to a file and decides which _process.* method to use

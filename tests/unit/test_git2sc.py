@@ -26,10 +26,14 @@ class TestGit2SC(unittest.TestCase):
         self.json_patch = patch('git2sc.git2sc.json', autospect=True)
         self.json = self.json_patch.start()
 
+        self.os_patch = patch('git2sc.git2sc.os', autospect=True)
+        self.os = self.os_patch.start()
+
     def tearDown(self):
         self.requests_patch.stop()
         self.requests_error_patch.stop()
         self.json_patch.stop()
+        self.os_patch.stop()
 
     def test_has_auth_set(self):
         'Required attribute for some methods'
@@ -325,9 +329,8 @@ class TestGit2SC(unittest.TestCase):
         )
         self.assertEqual(page_id, '412254212')
 
-    @patch('git2sc.git2sc.os', autospect=True)
     @patch('git2sc.git2sc.shlex', autospect=True)
-    def test_can_load_files_safely(self, shlexMock, osMock):
+    def test_can_load_files_safely(self, shlexMock):
         '''Required to ensure that we can load files in a safe way'''
         path_to_file = '/path/to/file'
 
@@ -338,7 +341,7 @@ class TestGit2SC(unittest.TestCase):
             None,
         )
         self.assertEqual(
-            osMock.path.expanduser.assert_called_with(
+            self.os.path.expanduser.assert_called_with(
                 shlexMock.quote.return_value,
             ),
             None,
@@ -348,7 +351,7 @@ class TestGit2SC(unittest.TestCase):
     @patch('git2sc.git2sc.subprocess', autospect=True)
     def test_can_process_adoc(self, subprocessMock, loadfileMock):
         '''Required to ensure that we can transform adoc files to html'''
-        path_to_file = '/path/to/file'
+        path_to_file = '/path/to/file.adoc'
         result = self.git2sc._process_adoc(path_to_file)
 
         self.assertEqual(
@@ -379,7 +382,7 @@ class TestGit2SC(unittest.TestCase):
     @patch('git2sc.git2sc.open', autospect=True)
     def test_can_process_html(self, openMock, loadfileMock):
         '''Required to ensure that we can load html files'''
-        path_to_file = '/path/to/file'
+        path_to_file = '/path/to/file.html'
         result = self.git2sc._process_html(path_to_file)
 
         self.assertEqual(
@@ -402,7 +405,7 @@ class TestGit2SC(unittest.TestCase):
     @patch('git2sc.git2sc.subprocess', autospect=True)
     def test_can_process_md(self, subprocessMock, loadfileMock):
         '''Required to ensure that we can transform md files to html'''
-        path_to_file = '/path/to/file'
+        path_to_file = '/path/to/file.md'
         result = self.git2sc._process_md(path_to_file)
 
         self.assertEqual(
@@ -433,6 +436,7 @@ class TestGit2SC(unittest.TestCase):
         '''Required to ensure that the import_file method as a wrapper
         of the _process_* recognizes asciidoc files'''
         path_to_file = '/path/to/file.adoc'
+        self.os.path.splitext.return_value = ['/path/to/file', '.adoc']
         html = self.git2sc.import_file(path_to_file)
         self.assertEqual(
             adocMock.assert_called_with(path_to_file),
@@ -448,6 +452,7 @@ class TestGit2SC(unittest.TestCase):
         '''Required to ensure that the import_file method as a wrapper
         of the _process_* recognizes html files'''
         path_to_file = '/path/to/file.html'
+        self.os.path.splitext.return_value = ['/path/to/file', '.html']
         html = self.git2sc.import_file(path_to_file)
         self.assertEqual(
             htmlMock.assert_called_with(path_to_file),
@@ -463,6 +468,7 @@ class TestGit2SC(unittest.TestCase):
         '''Required to ensure that the import_file method as a wrapper
         of the _process_* recognizes markdown files'''
         path_to_file = '/path/to/file.md'
+        self.os.path.splitext.return_value = ['/path/to/file', '.md']
         html = self.git2sc.import_file(path_to_file)
         self.assertEqual(
             mdMock.assert_called_with(path_to_file),
@@ -549,7 +555,6 @@ class TestGit2SC(unittest.TestCase):
         # Assert that the root directories are created
         self.assertEqual(
             createpageMock.assert_called_with(
-                self.space,
                 'formation',
                 importfileMock.return_value
             ),
@@ -559,7 +564,6 @@ class TestGit2SC(unittest.TestCase):
         # Assert that the root files are created
         self.assertEqual(
             createpageMock.assert_called_with(
-                self.space,
                 'parent_article',
                 importfileMock.return_value,
             ),
@@ -567,7 +571,6 @@ class TestGit2SC(unittest.TestCase):
         )
         self.assertEqual(
             createpageMock.assert_called_with(
-                self.space,
                 'repository_example',
                 importfileMock.return_value,
             ),
@@ -577,14 +580,12 @@ class TestGit2SC(unittest.TestCase):
         # Assert that the excluded directories are not called
         self.assertFalse(
             createpageMock.assert_called_with(
-                self.space,
                 '.git',
                 importfileMock.return_value,
             ),
         )
         self.assertFalse(
             createpageMock.assert_called_with(
-                self.space,
                 'git_file',
                 importfileMock.return_value,
             ),
@@ -594,7 +595,6 @@ class TestGit2SC(unittest.TestCase):
 
         self.assertEqual(
             createpageMock.assert_called_with(
-                self.space,
                 'ansible',
                 importfileMock.return_value,
                 'id_formation',
@@ -603,7 +603,6 @@ class TestGit2SC(unittest.TestCase):
         )
         self.assertEqual(
             createpageMock.assert_called_with(
-                self.space,
                 'formation_guide',
                 importfileMock.return_value,
                 'id_formation',
@@ -615,7 +614,6 @@ class TestGit2SC(unittest.TestCase):
 
         self.assertEqual(
             createpageMock.assert_called_with(
-                self.space,
                 'molecule',
                 importfileMock.return_value,
                 'id_ansible',
@@ -627,7 +625,6 @@ class TestGit2SC(unittest.TestCase):
 
         self.assertEqual(
             createpageMock.assert_called_with(
-                self.space,
                 'child_child_doc',
                 importfileMock.return_value,
                 'id_molecule',
@@ -692,16 +689,38 @@ class TestGit2SC(unittest.TestCase):
         directory_path = '/path/to/directory'
         createpageMock.return_value = '372223610'
         importfileMock.return_value = '<p> This is a test </p>'
+        self.os.path.join.return_value = '{}/{}'.format(
+            directory_path,
+            'README.adoc',
+        )
+        self.os.path.isfile.return_value = True
 
         self.git2sc._process_directory_readme(directory_path)
 
         self.assertEqual(
-            createpageMock.assert_called_with(self.space),
+            self.os.path.join.assert_called_with(
+                directory_path,
+                'README.adoc',
+            ),
             None,
         )
         self.assertEqual(
-            importfileMock.assert_called_with('README.adoc'),
+            self.os.path.isfile.assert_called_with(
+                self.os.path.join.return_value
+            ),
             None,
+        )
+
+        self.assertEqual(
+            importfileMock.assert_called_with('/path/to/directory/README.adoc'),
+            None,
+        )
+        self.assertEqual(
+            createpageMock.assert_called_with(
+                'README',
+                importfileMock.return_value,
+            ),
+            None
         )
 
 
