@@ -202,7 +202,7 @@ class Git2SC():
         html = self.import_file(file_path)
         self.update_page(homepage, html)
 
-    def _process_directory_readme(self, directory_path):
+    def _process_directory_readme(self, directory_path, parent_id=None):
         '''Takes a directory path, searches for README.adoc or README.md and
         creates a confluence page with that information'''
 
@@ -214,7 +214,11 @@ class Git2SC():
             readme_file = md_file
 
         html = self.import_file(readme_file)
-        self.create_page('README', html)
+        return self.create_page(
+            os.path.basename(directory_path),
+            html,
+            parent_id,
+        )
 
     def import_file(self, file_path):
         '''Takes a path to a file and decides which _process.* method to use
@@ -235,7 +239,6 @@ class Git2SC():
 
     def directory_full_upload(
         self,
-        space_id,
         path,
         excluded_directories,
         parent_id=None
@@ -250,16 +253,15 @@ class Git2SC():
         '''
 
         is_root_directory = True
-        for root, directories, files in os.walk('.'):
+        for root, directories, files in os.walk(path):
             if is_root_directory and parent_id is None:
-                self._process_mainpage(space_id)
+                self._process_mainpage(self.space)
                 is_root_directory = False
             else:
                 parent_id = self._process_directory_readme(root)
 
             for file in files:
                 self.create_page(
-                    space_id,
                     file.split('.')[:-1],
                     self.import_file(file),
                     parent_id,

@@ -517,9 +517,14 @@ class TestGit2SC(unittest.TestCase):
         self.assertTrue(self.requests_error.called)
 
     @patch('git2sc.git2sc.Git2SC.create_page', autospect=True)
+    @patch('git2sc.git2sc.Git2SC._process_directory_readme', autospect=True)
     @patch('git2sc.git2sc.Git2SC.import_file', autospect=True)
-    @pytest.mark.skip('Estamos trabajando en ello')
-    def test_can_full_upload_directory(self, importfileMock, createpageMock,):
+    def test_can_full_upload_directory(
+        self,
+        importfileMock,
+        readmeMock,
+        createpageMock,
+    ):
         '''Given a directory path test that git2sc crawls all the files and
         uploads them to confluence.
 
@@ -541,97 +546,50 @@ class TestGit2SC(unittest.TestCase):
         It should ignore the .git directory as it's in the excluded
         '''
 
-        def create_side_effect(space, name, path):
-            return 'id_{}'
+        def create_side_effect(directory_name, parent_id=None):
+            return 'id_{}'.format(os.path.basename(directory_name))
 
         excluded_directories = ['.git']
-        createpageMock.side_effect = create_side_effect
+        readmeMock.side_effect = create_side_effect
+        self.os.walk.side_effect = os.walk
 
         self.git2sc.directory_full_upload(
-            self.space,
             'tests/data/repository_example',
             excluded_directories,
         )
 
-        # Assert that the root directories are created
+        # Assert that the directories are created
         self.assertEqual(
-            createpageMock.assert_called_with(
-                'formation',
-                importfileMock.return_value
-            ),
-            None
+            readmeMock.mock_calls,
+            [
+                call('tests/data/repository_example/formation'),
+                call('tests/data/repository_example/formation/ansible'),
+                call(
+                    'tests/data/repository_example/formation/ansible/molecule'
+                )
+            ]
         )
 
-        # Assert that the root files are created
+        # Assert that the files are created
         self.assertEqual(
-            createpageMock.assert_called_with(
-                'parent_article',
-                importfileMock.return_value,
-            ),
-            None
-        )
-        self.assertEqual(
-            createpageMock.assert_called_with(
-                'repository_example',
-                importfileMock.return_value,
-            ),
-            None
-        )
-
-        # Assert that the excluded directories are not called
-        self.assertFalse(
-            createpageMock.assert_called_with(
-                '.git',
-                importfileMock.return_value,
-            ),
-        )
-        self.assertFalse(
-            createpageMock.assert_called_with(
-                'git_file',
-                importfileMock.return_value,
-            ),
+            createpageMock.mock_calls,
+            [
+                call(['parent_article'], importfileMock.return_value, None),
+                call(
+                    ['formation_guide'],
+                    importfileMock.return_value,
+                    'id_formation'
+                ),
+                call(
+                    ['child_child_doc'],
+                    importfileMock.return_value,
+                    'id_molecule'
+                )
+            ]
         )
 
-        # Assert formation childs are created
-
-        self.assertEqual(
-            createpageMock.assert_called_with(
-                'ansible',
-                importfileMock.return_value,
-                'id_formation',
-            ),
-            None
-        )
-        self.assertEqual(
-            createpageMock.assert_called_with(
-                'formation_guide',
-                importfileMock.return_value,
-                'id_formation',
-            ),
-            None
-        )
-
-        # Assert ansible childs are created
-
-        self.assertEqual(
-            createpageMock.assert_called_with(
-                'molecule',
-                importfileMock.return_value,
-                'id_ansible',
-            ),
-            None
-        )
-
-        # Assert molecule childs are created
-
-        self.assertEqual(
-            createpageMock.assert_called_with(
-                'child_child_doc',
-                importfileMock.return_value,
-                'id_molecule',
-            ),
-            None
-        )
+        # Assert that the homepage is created
+        self.assertTrue(False)
 
     @patch('git2sc.git2sc.Git2SC.create_page', autospect=True)
     @patch('git2sc.git2sc.Git2SC.import_file', autospect=True)
@@ -685,12 +643,12 @@ class TestGit2SC(unittest.TestCase):
         createpageMock,
     ):
         '''Given a directory path test that git2sc creates a page with the
-        contents of README.adoc'''
+        contents of README.adoc being the title the name of the directory'''
 
         directory_path = '/path/to/directory'
         createpageMock.return_value = '372223610'
-        importfileMock.return_value = '<p> This is a test </p>'
         self.os.path.join.side_effect = os.path.join
+        self.os.path.basename.side_effect = os.path.basename
 
         def true_if_adoc(file_path):
             extension = os.path.splitext(file_path)[-1]
@@ -700,7 +658,7 @@ class TestGit2SC(unittest.TestCase):
 
         self.os.path.isfile.side_effect = true_if_adoc
 
-        self.git2sc._process_directory_readme(directory_path)
+        result = self.git2sc._process_directory_readme(directory_path)
 
         self.assertTrue(
             call(directory_path, 'README.adoc')
@@ -713,10 +671,15 @@ class TestGit2SC(unittest.TestCase):
         )
         self.assertEqual(
             createpageMock.assert_called_with(
-                'README',
+                'directory',
                 importfileMock.return_value,
+                None,
             ),
             None
+        )
+        self.assertEqual(
+            result,
+            createpageMock.return_value,
         )
 
     @patch('git2sc.git2sc.Git2SC.create_page', autospect=True)
@@ -727,12 +690,12 @@ class TestGit2SC(unittest.TestCase):
         createpageMock,
     ):
         '''Given a directory path test that git2sc creates a page with the
-        contents of README.md'''
+        contents of README.md being the title the name of the directory'''
 
         directory_path = '/path/to/directory'
         createpageMock.return_value = '372223610'
-        importfileMock.return_value = '<p> This is a test </p>'
         self.os.path.join.side_effect = os.path.join
+        self.os.path.basename.side_effect = os.path.basename
 
         def true_if_md(file_path):
             extension = os.path.splitext(file_path)[-1]
@@ -742,7 +705,7 @@ class TestGit2SC(unittest.TestCase):
 
         self.os.path.isfile.side_effect = true_if_md
 
-        self.git2sc._process_directory_readme(directory_path)
+        result = self.git2sc._process_directory_readme(directory_path)
 
         self.assertTrue(
             call(directory_path, 'README.md')
@@ -755,12 +718,50 @@ class TestGit2SC(unittest.TestCase):
         )
         self.assertEqual(
             createpageMock.assert_called_with(
-                'README',
+                'directory',
                 importfileMock.return_value,
+                None,
             ),
             None
         )
+        self.assertEqual(
+            result,
+            createpageMock.return_value,
+        )
 
+    @patch('git2sc.git2sc.Git2SC.create_page', autospect=True)
+    @patch('git2sc.git2sc.Git2SC.import_file', autospect=True)
+    def test_process_directory_readme_can_accept_parent_id(
+        self,
+        importfileMock,
+        createpageMock,
+    ):
+        '''Given a directory path test that git2sc creates a page with the
+        contents of README.md under a specified article id'''
+
+        directory_path = '/path/to/directory'
+        parent_id = '372223610'
+        self.os.path.join.side_effect = os.path.join
+        self.os.path.basename.side_effect = os.path.basename
+
+        def true_if_md(file_path):
+            extension = os.path.splitext(file_path)[-1]
+            if extension == '.md':
+                return True
+            return False
+
+        self.os.path.isfile.side_effect = true_if_md
+
+        self.git2sc._process_directory_readme(directory_path, parent_id)
+
+        self.assertEqual(
+            createpageMock.assert_called_with(
+                'directory',
+                importfileMock.return_value,
+                parent_id
+            ),
+            None
+        )
 
 class TestGit2SC_requests_error(unittest.TestCase):
     '''Test class for the Git2SC _requests_error method'''
