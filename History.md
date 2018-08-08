@@ -14,7 +14,6 @@
 
   * Mock json in tests to avoid random break
 
-
 0.5.1 / 2018-08-03
 ==================
 
