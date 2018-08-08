@@ -1,4 +1,10 @@
 
+0.6.0 / 2018-08-07
+==================
+
+  * Add markdown support
+  * Refactored the loading of files to _safe_load_file
+
 0.5.2 / 2018-08-07
 ==================
 
