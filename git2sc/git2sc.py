@@ -176,6 +176,12 @@ class Git2SC():
         with open(clean_path, 'r') as f:
             return f.read()
 
+    def _process_mainpage(self, space_id, file_path):
+        '''Takes a path to a file and updates the confluence homepage'''
+        homepage = self.get_space_homepage(space_id)
+        html = self.import_file(file_path)
+        self.update_page(homepage, html)
+
     def import_file(self, file_path):
         '''Takes a path to a file and decides which _process.* method to use
         based on the extension'''
@@ -209,7 +215,7 @@ class Git2SC():
 
         is_root_directory = True
         for root, directories, files in os.walk('.'):
-            if is_root_directory:
+            if is_root_directory and parent_id is None:
                 self._process_mainpage()
                 is_root_directory = False
             else:

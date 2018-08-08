@@ -24,6 +24,8 @@ class TestGit2SC(unittest.TestCase):
         self.json_patch = patch('git2sc.git2sc.json')
         self.json = self.json_patch.start()
 
+        self.space = 'TST'
+
     def tearDown(self):
         self.requests_patch.stop()
         self.requests_error_patch.stop()
@@ -67,7 +69,6 @@ class TestGit2SC(unittest.TestCase):
         '''Required to ensure that the get_space_homepage method calls the
         correct api endpoint and returns the article id'''
 
-        space_id = 'TST'
         self.requests.get.return_value.json.return_value = {
             '_expandable': {'homepage': '/rest/api/content/372334010'},
         }
@@ -76,7 +77,7 @@ class TestGit2SC(unittest.TestCase):
             self.requests.get.assert_called_with(
                 '{}/space/{}'.format(
                     self.api_url,
-                    space_id,
+                    self.space,
                 ),
                 auth=self.auth
             ),
@@ -485,7 +486,7 @@ class TestGit2SC(unittest.TestCase):
         createpageMock.side_effect = create_side_effect
 
         self.git2sc.directory_full_upload(
-            'Space',
+            self.space,
             'tests/data/repository_example',
             excluded_directories,
         )
@@ -493,7 +494,7 @@ class TestGit2SC(unittest.TestCase):
         # Assert that the root directories are created
         self.assertEqual(
             createpageMock.assert_called_with(
-                'Space',
+                self.space,
                 'formation',
                 importfileMock.return_value
             ),
@@ -503,7 +504,7 @@ class TestGit2SC(unittest.TestCase):
         # Assert that the root files are created
         self.assertEqual(
             createpageMock.assert_called_with(
-                'Space',
+                self.space,
                 'parent_article',
                 importfileMock.return_value,
             ),
@@ -511,7 +512,7 @@ class TestGit2SC(unittest.TestCase):
         )
         self.assertEqual(
             createpageMock.assert_called_with(
-                'Space',
+                self.space,
                 'repository_example',
                 importfileMock.return_value,
             ),
@@ -521,14 +522,14 @@ class TestGit2SC(unittest.TestCase):
         # Assert that the excluded directories are not called
         self.assertFalse(
             createpageMock.assert_called_with(
-                'Space',
+                self.space,
                 '.git',
                 importfileMock.return_value,
             ),
         )
         self.assertFalse(
             createpageMock.assert_called_with(
-                'Space',
+                self.space,
                 'git_file',
                 importfileMock.return_value,
             ),
@@ -538,7 +539,7 @@ class TestGit2SC(unittest.TestCase):
 
         self.assertEqual(
             createpageMock.assert_called_with(
-                'Space',
+                self.space,
                 'ansible',
                 importfileMock.return_value,
                 'id_formation',
@@ -547,7 +548,7 @@ class TestGit2SC(unittest.TestCase):
         )
         self.assertEqual(
             createpageMock.assert_called_with(
-                'Space',
+                self.space,
                 'formation_guide',
                 importfileMock.return_value,
                 'id_formation',
@@ -559,7 +560,7 @@ class TestGit2SC(unittest.TestCase):
 
         self.assertEqual(
             createpageMock.assert_called_with(
-                'Space',
+                self.space,
                 'molecule',
                 importfileMock.return_value,
                 'id_ansible',
@@ -571,7 +572,7 @@ class TestGit2SC(unittest.TestCase):
 
         self.assertEqual(
             createpageMock.assert_called_with(
-                'Space',
+                self.space,
                 'child_child_doc',
                 importfileMock.return_value,
                 'id_molecule',
@@ -589,6 +590,39 @@ class TestGit2SC(unittest.TestCase):
     ):
         pass
 
+    @patch('git2sc.git2sc.Git2SC.update_page')
+    @patch('git2sc.git2sc.Git2SC.import_file')
+    @patch('git2sc.git2sc.Git2SC.get_space_homepage')
+    def test_can_import_mainpage(
+        self,
+        gethomepageMock,
+        importfileMock,
+        updatepageMock,
+    ):
+        '''Given a root directory path test that git2sc obtains the homepage of
+        the confluence page and substitute it with the README.md or README.adoc
+        '''
+
+        gethomepageMock.return_value = '372223610'
+        importfileMock.return_value = '<p> This is a test </p>'
+
+        self.git2sc._process_mainpage(self.space, 'README.adoc')
+
+        self.assertEqual(
+            gethomepageMock.assert_called_with(self.space),
+            None,
+        )
+        self.assertEqual(
+            importfileMock.assert_called_with('README.adoc'),
+            None,
+        )
+        self.assertEqual(
+            updatepageMock.assert_called_with(
+                gethomepageMock.return_value,
+                importfileMock.return_value,
+            ),
+            None,
+        )
 
 class TestGit2SC_requests_error(unittest.TestCase):
     '''Test class for the Git2SC _requests_error method'''
