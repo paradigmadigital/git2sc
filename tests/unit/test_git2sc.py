@@ -1,7 +1,8 @@
+import os
 import json
 import pytest
 import unittest
-from unittest.mock import patch, Mock
+from unittest.mock import patch, Mock, call
 from git2sc.git2sc import Git2SC, UnknownExtension
 
 
@@ -689,30 +690,67 @@ class TestGit2SC(unittest.TestCase):
         directory_path = '/path/to/directory'
         createpageMock.return_value = '372223610'
         importfileMock.return_value = '<p> This is a test </p>'
-        self.os.path.join.return_value = '{}/{}'.format(
-            directory_path,
-            'README.adoc',
-        )
-        self.os.path.isfile.return_value = True
+        self.os.path.join.side_effect = os.path.join
+
+        def true_if_adoc(file_path):
+            extension = os.path.splitext(file_path)[-1]
+            if extension == '.adoc':
+                return True
+            return False
+
+        self.os.path.isfile.side_effect = true_if_adoc
 
         self.git2sc._process_directory_readme(directory_path)
 
-        self.assertEqual(
-            self.os.path.join.assert_called_with(
-                directory_path,
-                'README.adoc',
-            ),
-            None,
-        )
-        self.assertEqual(
-            self.os.path.isfile.assert_called_with(
-                self.os.path.join.return_value
-            ),
-            None,
+        self.assertTrue(
+            call(directory_path, 'README.adoc')
+            in self.os.path.join.mock_calls
         )
 
         self.assertEqual(
             importfileMock.assert_called_with('/path/to/directory/README.adoc'),
+            None,
+        )
+        self.assertEqual(
+            createpageMock.assert_called_with(
+                'README',
+                importfileMock.return_value,
+            ),
+            None
+        )
+
+    @patch('git2sc.git2sc.Git2SC.create_page', autospect=True)
+    @patch('git2sc.git2sc.Git2SC.import_file', autospect=True)
+    def test_can_process_directory_readme_md(
+        self,
+        importfileMock,
+        createpageMock,
+    ):
+        '''Given a directory path test that git2sc creates a page with the
+        contents of README.md'''
+
+        directory_path = '/path/to/directory'
+        createpageMock.return_value = '372223610'
+        importfileMock.return_value = '<p> This is a test </p>'
+        self.os.path.join.side_effect = os.path.join
+
+        def true_if_md(file_path):
+            extension = os.path.splitext(file_path)[-1]
+            if extension == '.md':
+                return True
+            return False
+
+        self.os.path.isfile.side_effect = true_if_md
+
+        self.git2sc._process_directory_readme(directory_path)
+
+        self.assertTrue(
+            call(directory_path, 'README.md')
+            in self.os.path.join.mock_calls
+        )
+
+        self.assertEqual(
+            importfileMock.assert_called_with('/path/to/directory/README.md'),
             None,
         )
         self.assertEqual(

@@ -207,8 +207,11 @@ class Git2SC():
         creates a confluence page with that information'''
 
         adoc_file = os.path.join(directory_path, 'README.adoc')
+        md_file = os.path.join(directory_path, 'README.md')
         if os.path.isfile(adoc_file):
             readme_file = adoc_file
+        elif os.path.isfile(md_file):
+            readme_file = md_file
 
         html = self.import_file(readme_file)
         self.create_page('README', html)
