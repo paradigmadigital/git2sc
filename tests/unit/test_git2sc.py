@@ -599,8 +599,8 @@ class TestGit2SC(unittest.TestCase):
         importfileMock,
         updatepageMock,
     ):
-        '''Given a root directory path test that git2sc obtains the homepage of
-        the confluence page and substitute it with the README.md or README.adoc
+        '''Given a root directory path test that git2sc substitutes the homepage
+        of the confluence page with the README.adoc
         '''
 
         gethomepageMock.return_value = '372223610'
@@ -624,6 +624,37 @@ class TestGit2SC(unittest.TestCase):
             None,
         )
 
+    @patch('git2sc.git2sc.Git2SC.create_page')
+    @patch('git2sc.git2sc.Git2SC.import_file')
+    def test_can_process_directory_readme_adoc(
+        self,
+        importfileMock,
+        createpageMock,
+    ):
+        '''Given a directory path test that git2sc creates a page with the
+        contents of README.adoc'''
+
+        directory_path = '/path/to/directory'
+        createpageMock.return_value = '372223610'
+        importfileMock.return_value = '<p> This is a test </p>'
+
+        self.git2sc._process_directory_readme(directory_path)
+
+        self.assertEqual(
+            gethomepageMock.assert_called_with(self.space),
+            None,
+        )
+        self.assertEqual(
+            importfileMock.assert_called_with('README.adoc'),
+            None,
+        )
+        self.assertEqual(
+            updatepageMock.assert_called_with(
+                gethomepageMock.return_value,
+                importfileMock.return_value,
+            ),
+            None,
+        )
 class TestGit2SC_requests_error(unittest.TestCase):
     '''Test class for the Git2SC _requests_error method'''
 

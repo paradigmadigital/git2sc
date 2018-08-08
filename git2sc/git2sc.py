@@ -199,7 +199,7 @@ class Git2SC():
 
     def directory_full_upload(
         self,
-        space,
+        space_id,
         path,
         excluded_directories,
         parent_id=None
@@ -216,14 +216,14 @@ class Git2SC():
         is_root_directory = True
         for root, directories, files in os.walk('.'):
             if is_root_directory and parent_id is None:
-                self._process_mainpage()
+                self._process_mainpage(space_id)
                 is_root_directory = False
             else:
-                parent_id = self.import_directory_readme(root)
+                parent_id = self._process_directory_readme(root)
 
             for file in files:
                 self.create_page(
-                    space,
+                    space_id,
                     file.split('.')[:-1],
                     self.import_file(file),
                     parent_id,
