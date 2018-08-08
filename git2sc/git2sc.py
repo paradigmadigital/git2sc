@@ -201,9 +201,9 @@ class Git2SC():
         with open(clean_path, 'r') as f:
             return f.read()
 
-    def _process_mainpage(self, space_id, file_path):
+    def _process_mainpage(self, file_path):
         '''Takes a path to a file and updates the confluence homepage'''
-        homepage = self.get_space_homepage(space_id)
+        homepage = self.get_space_homepage()
         html = self.import_file(file_path)
         self.update_page(homepage, html)
 

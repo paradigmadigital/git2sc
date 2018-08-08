@@ -15,14 +15,15 @@ class TestGit2SC(unittest.TestCase):
         self.space = 'TST'
         self.git2sc = Git2SC(self.api_url, self.auth_string, self.space)
 
-        self.requests_patch = patch('git2sc.git2sc.requests')
+        self.requests_patch = patch('git2sc.git2sc.requests', autospect=True)
         self.requests = self.requests_patch.start()
         self.requests_error_patch = patch(
             'git2sc.git2sc.Git2SC._requests_error',
+            autospect=True
         )
         self.requests_error = self.requests_error_patch.start()
 
-        self.json_patch = patch('git2sc.git2sc.json')
+        self.json_patch = patch('git2sc.git2sc.json', autospect=True)
         self.json = self.json_patch.start()
 
     def tearDown(self):
@@ -191,7 +192,7 @@ class TestGit2SC(unittest.TestCase):
         )
         self.assertTrue(self.requests_error.called)
 
-    @patch('git2sc.git2sc.Git2SC.get_page_info')
+    @patch('git2sc.git2sc.Git2SC.get_page_info', autospect=True)
     def test_can_update_articles_not_in_pages(self, getPageInfoMock):
         '''Required to ensure that the update_page method can update a page
         even though the pages attribute is empty'''
@@ -324,8 +325,8 @@ class TestGit2SC(unittest.TestCase):
         )
         self.assertEqual(page_id, '412254212')
 
-    @patch('git2sc.git2sc.os')
-    @patch('git2sc.git2sc.shlex')
+    @patch('git2sc.git2sc.os', autospect=True)
+    @patch('git2sc.git2sc.shlex', autospect=True)
     def test_can_load_files_safely(self, shlexMock, osMock):
         '''Required to ensure that we can load files in a safe way'''
         path_to_file = '/path/to/file'
@@ -343,8 +344,8 @@ class TestGit2SC(unittest.TestCase):
             None,
         )
 
-    @patch('git2sc.git2sc.Git2SC._safe_load_file')
-    @patch('git2sc.git2sc.subprocess')
+    @patch('git2sc.git2sc.Git2SC._safe_load_file', autospect=True)
+    @patch('git2sc.git2sc.subprocess', autospect=True)
     def test_can_process_adoc(self, subprocessMock, loadfileMock):
         '''Required to ensure that we can transform adoc files to html'''
         path_to_file = '/path/to/file'
@@ -374,8 +375,8 @@ class TestGit2SC(unittest.TestCase):
             return_value.replace('<!DOCTYPE html>\n', '')
         )
 
-    @patch('git2sc.git2sc.Git2SC._safe_load_file')
-    @patch('git2sc.git2sc.open')
+    @patch('git2sc.git2sc.Git2SC._safe_load_file', autospect=True)
+    @patch('git2sc.git2sc.open', autospect=True)
     def test_can_process_html(self, openMock, loadfileMock):
         '''Required to ensure that we can load html files'''
         path_to_file = '/path/to/file'
@@ -397,8 +398,8 @@ class TestGit2SC(unittest.TestCase):
             openMock.return_value.__enter__.return_value.read.return_value
         )
 
-    @patch('git2sc.git2sc.Git2SC._safe_load_file')
-    @patch('git2sc.git2sc.subprocess')
+    @patch('git2sc.git2sc.Git2SC._safe_load_file', autospect=True)
+    @patch('git2sc.git2sc.subprocess', autospect=True)
     def test_can_process_md(self, subprocessMock, loadfileMock):
         '''Required to ensure that we can transform md files to html'''
         path_to_file = '/path/to/file'
@@ -427,7 +428,7 @@ class TestGit2SC(unittest.TestCase):
             subprocessMock.check_output.return_value.decode.return_value
         )
 
-    @patch('git2sc.git2sc.Git2SC._process_adoc')
+    @patch('git2sc.git2sc.Git2SC._process_adoc', autospect=True)
     def test_import_file_method_supports_adoc_files(self, adocMock):
         '''Required to ensure that the import_file method as a wrapper
         of the _process_* recognizes asciidoc files'''
@@ -442,7 +443,7 @@ class TestGit2SC(unittest.TestCase):
             adocMock.return_value
         )
 
-    @patch('git2sc.git2sc.Git2SC._process_html')
+    @patch('git2sc.git2sc.Git2SC._process_html', autospect=True)
     def test_import_file_method_supports_html_files(self, htmlMock):
         '''Required to ensure that the import_file method as a wrapper
         of the _process_* recognizes html files'''
@@ -457,7 +458,7 @@ class TestGit2SC(unittest.TestCase):
             htmlMock.return_value
         )
 
-    @patch('git2sc.git2sc.Git2SC._process_md')
+    @patch('git2sc.git2sc.Git2SC._process_md', autospect=True)
     def test_import_file_method_supports_md_files(self, mdMock):
         '''Required to ensure that the import_file method as a wrapper
         of the _process_* recognizes markdown files'''
@@ -508,8 +509,8 @@ class TestGit2SC(unittest.TestCase):
 
         self.assertTrue(self.requests_error.called)
 
-    @patch('git2sc.git2sc.Git2SC.create_page')
-    @patch('git2sc.git2sc.Git2SC.import_file')
+    @patch('git2sc.git2sc.Git2SC.create_page', autospect=True)
+    @patch('git2sc.git2sc.Git2SC.import_file', autospect=True)
     @pytest.mark.skip('Estamos trabajando en ello')
     def test_can_full_upload_directory(self, importfileMock, createpageMock,):
         '''Given a directory path test that git2sc crawls all the files and
@@ -634,8 +635,8 @@ class TestGit2SC(unittest.TestCase):
             None
         )
 
-    @patch('git2sc.git2sc.Git2SC.create_page')
-    @patch('git2sc.git2sc.Git2SC.import_file')
+    @patch('git2sc.git2sc.Git2SC.create_page', autospect=True)
+    @patch('git2sc.git2sc.Git2SC.import_file', autospect=True)
     @pytest.mark.skip('Not yet implemented')
     def test_can_full_upload_directory_hanging_from_parent_article(
         self,
@@ -644,9 +645,9 @@ class TestGit2SC(unittest.TestCase):
     ):
         pass
 
-    @patch('git2sc.git2sc.Git2SC.update_page')
-    @patch('git2sc.git2sc.Git2SC.import_file')
-    @patch('git2sc.git2sc.Git2SC.get_space_homepage')
+    @patch('git2sc.git2sc.Git2SC.update_page', autospect=True)
+    @patch('git2sc.git2sc.Git2SC.import_file', autospect=True)
+    @patch('git2sc.git2sc.Git2SC.get_space_homepage', autospect=True)
     def test_can_import_mainpage(
         self,
         gethomepageMock,
@@ -660,10 +661,10 @@ class TestGit2SC(unittest.TestCase):
         gethomepageMock.return_value = '372223610'
         importfileMock.return_value = '<p> This is a test </p>'
 
-        self.git2sc._process_mainpage(self.space, 'README.adoc')
+        self.git2sc._process_mainpage('README.adoc')
 
         self.assertEqual(
-            gethomepageMock.assert_called_with(self.space),
+            gethomepageMock.assert_called_with(),
             None,
         )
         self.assertEqual(
@@ -678,9 +679,8 @@ class TestGit2SC(unittest.TestCase):
             None,
         )
 
-    @patch('git2sc.git2sc.Git2SC.create_page')
-    @patch('git2sc.git2sc.Git2SC.import_file')
-    @pytest.mark.skip('Estamos trabajando en ello')
+    @patch('git2sc.git2sc.Git2SC.create_page', autospect=True)
+    @patch('git2sc.git2sc.Git2SC.import_file', autospect=True)
     def test_can_process_directory_readme_adoc(
         self,
         importfileMock,
@@ -695,6 +695,15 @@ class TestGit2SC(unittest.TestCase):
 
         self.git2sc._process_directory_readme(directory_path)
 
+        self.assertEqual(
+            createpageMock.assert_called_with(self.space),
+            None,
+        )
+        self.assertEqual(
+            importfileMock.assert_called_with('README.adoc'),
+            None,
+        )
+
 
 class TestGit2SC_requests_error(unittest.TestCase):
     '''Test class for the Git2SC _requests_error method'''
@@ -708,7 +717,7 @@ class TestGit2SC_requests_error(unittest.TestCase):
 
         self.requests_object = Mock()
 
-        self.print_patch = patch('git2sc.git2sc.print')
+        self.print_patch = patch('git2sc.git2sc.print', autospect=True)
         self.print = self.print_patch.start()
 
     def tearDown(self):
