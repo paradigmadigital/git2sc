@@ -196,10 +196,11 @@ class Git2SC():
         with open(clean_path, 'r') as f:
             return f.read()
 
-    def _process_mainpage(self, file_path):
+    def _process_mainpage(self, directory_path):
         '''Takes a path to a file and updates the confluence homepage'''
         homepage = self.get_space_homepage()
-        html = self.import_file(file_path)
+        html = self._discover_directory_readme(directory_path)
+        import pdb; pdb.set_trace()  # XXX BREAKPOINT
         self.update_page(homepage, html)
 
     def _discover_directory_readme(self, directory_path, parent_id=None):
@@ -259,7 +260,7 @@ class Git2SC():
         is_root_directory = True
         for root, directories, files in os.walk(path):
             if is_root_directory and parent_id is None:
-                self._process_mainpage()
+                self._process_mainpage(root)
                 is_root_directory = False
             else:
                 parent_id = self._process_directory_readme(root)

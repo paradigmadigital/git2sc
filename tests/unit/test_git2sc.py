@@ -595,7 +595,10 @@ class TestGit2SC(unittest.TestCase):
         )
 
         # Assert that the homepage is created
-        self.assertEqual(mainpageMock.assert_called_with(), None)
+        self.assertEqual(
+            mainpageMock.assert_called_with('tests/data/repository_example'),
+            None,
+        )
 
     @patch('git2sc.git2sc.Git2SC.create_page', autospect=True)
     @patch('git2sc.git2sc.Git2SC.import_file', autospect=True)
@@ -608,12 +611,12 @@ class TestGit2SC(unittest.TestCase):
         pass
 
     @patch('git2sc.git2sc.Git2SC.update_page', autospect=True)
-    @patch('git2sc.git2sc.Git2SC.import_file', autospect=True)
+    @patch('git2sc.git2sc.Git2SC._discover_directory_readme', autospect=True)
     @patch('git2sc.git2sc.Git2SC.get_space_homepage', autospect=True)
     def test_can_import_mainpage(
         self,
         gethomepageMock,
-        importfileMock,
+        discoverreadmeMock,
         updatepageMock,
     ):
         '''Given a root directory path test that git2sc substitutes the homepage
@@ -621,22 +624,22 @@ class TestGit2SC(unittest.TestCase):
         '''
 
         gethomepageMock.return_value = '372223610'
-        importfileMock.return_value = '<p> This is a test </p>'
+        discoverreadmeMock.return_value = '<p> This is a test </p>'
 
-        self.git2sc._process_mainpage('README.adoc')
+        self.git2sc._process_mainpage('.')
 
         self.assertEqual(
             gethomepageMock.assert_called_with(),
             None,
         )
         self.assertEqual(
-            importfileMock.assert_called_with('README.adoc'),
+            discoverreadmeMock.assert_called_with('.'),
             None,
         )
         self.assertEqual(
             updatepageMock.assert_called_with(
                 gethomepageMock.return_value,
-                importfileMock.return_value,
+                discoverreadmeMock.return_value,
             ),
             None,
         )
