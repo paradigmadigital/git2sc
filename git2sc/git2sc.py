@@ -1,7 +1,8 @@
 import os
 import json
-import requests
 import shlex
+import requests
+import pypandoc
 import subprocess
 
 
@@ -186,12 +187,7 @@ class Git2SC():
 
         clean_path = self._safe_load_file(md_file_path)
 
-        # Confluence doesn't like the <!DOCTYPE html> line, therefore
-        # the split('/n')
-        return subprocess.check_output(
-            ['pandoc', clean_path, '-t', 'html', '-o', '-'],
-            shell=False,
-        ).decode()
+        return pypandoc.convert_file(clean_path, 'html')
 
     def _process_html(self, html_file_path):
         '''Takes a path to an html file and returns it'''
@@ -203,7 +199,6 @@ class Git2SC():
         '''Takes a path to a file and updates the confluence homepage'''
         homepage = self.get_space_homepage()
         html = self._discover_directory_readme(directory_path)
-        import pdb; pdb.set_trace()  # XXX BREAKPOINT
         self.update_page(homepage, html)
 
     def _discover_directory_readme(self, directory_path, parent_id=None):

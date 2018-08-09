@@ -469,7 +469,7 @@ class TestGit2SC(unittest.TestCase):
         )
         self.assertEqual(
             result,
-            pypandocMock.return_value
+            pypandocMock.convert_file.return_value
         )
 
     @patch('git2sc.git2sc.Git2SC._process_adoc', autospect=True)
