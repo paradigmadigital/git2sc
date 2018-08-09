@@ -148,8 +148,7 @@ class TestGit2SC(unittest.TestCase):
         self.git2sc.get_space_articles()
         self.assertEqual(
             self.requests.get.assert_called_with(
-                '{}/content/?spaceKey={}?expand='
-                'ancestors,body.storage,version'.format(
+                '{}/content/?spaceKey={}'.format(
                     self.api_url,
                     self.space,
                 ),
@@ -160,6 +159,27 @@ class TestGit2SC(unittest.TestCase):
         self.assertTrue(self.requests_error.called)
         self.assertEqual(self.git2sc.pages, desired_pages)
         self.getspacearticles_patch.start()
+
+    def test_can_detect_if_title_exist_in_pages(self):
+        '''You can't create more than one article with a specified title, test
+        if title exists in the existing pages. test that it detects one'''
+
+        self.git2sc.pages = {
+            '371111110': {
+                "id": "371111110",
+                "type": "page",
+                "status": "current",
+                "title": "Article1",
+            },
+            '372222220': {
+                "id": "372222220",
+                "type": "page",
+                "status": "current",
+                "title": "Article2",
+            },
+        }
+        self.assertTrue(self.git2sc._title_exist('Article1'))
+        self.assertFalse(self.git2sc._title_exist('Article3'))
 
     def test_can_update_articles(self):
         '''Required to ensure that the update_page method posts to the
@@ -397,18 +417,22 @@ class TestGit2SC(unittest.TestCase):
         )
         self.assertEqual(page_id, '412254212')
 
-    def test_can_create_articles_when_name_exists(self):
+    @patch('git2sc.git2sc.Git2SC._title_exist', autospect=True)
+    def test_can_create_articles_when_name_exists(self, titleexistMock):
         '''In Confluence even though they use an article_id, you can't have two
         articles with the same name, so this test makes sure that in this case
         the title will be '{}_{}'.format(directoryname, filename) -.-'''
 
+        def title_side_effect(title):
+            if title == 'new title' or title == 'new title_1':
+                return True
+            return False
+        titleexistMock.side_effect = title_side_effect
         html = '<p> This is a new page </p>'
-        parent_id = '372274410'
 
         requests_data = {
             'type': 'page',
-            'ancestors': [{'id': parent_id}],
-            'title': 'new title',
+            'title': 'new title_2',
             'space': {'key': self.space},
             'body': {
                 'storage': {
@@ -420,32 +444,12 @@ class TestGit2SC(unittest.TestCase):
         requests_data_json = json.dumps(requests_data)
         self.json.dumps.return_value = requests_data_json
 
-        response_data = {'id': '412254212', 'type': 'page'}
-        response_data_json = json.dumps(response_data)
-        self.requests.post.return_value.text = response_data_json
-        self.json.loads.return_value = response_data
-
-        page_id = self.git2sc.create_page('new title', html, parent_id)
+        self.git2sc.create_page('new title', html)
 
         self.assertEqual(
             self.json.dumps.assert_called_with(requests_data),
             None,
         )
-        self.assertEqual(
-            self.requests.post.assert_called_with(
-                '{}/content'.format(self.api_url),
-                data=requests_data_json,
-                auth=self.auth,
-                headers={'Content-Type': 'application/json'},
-            ),
-            None,
-        )
-        self.assertTrue(self.requests_error.called)
-        self.assertEqual(
-            self.json.loads.assert_called_with(response_data_json),
-            None,
-        )
-        self.assertEqual(page_id, '412254212')
 
     @patch('git2sc.git2sc.shlex', autospect=True)
     def test_can_load_files_safely(self, shlexMock):
