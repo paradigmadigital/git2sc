@@ -197,7 +197,54 @@ class TestGit2SC(unittest.TestCase):
         )
         self.assertTrue(self.requests_error.called)
 
-    @patch('git2sc.git2sc.Git2SC.get_page_info', autospect=True)
+    def test_can_update_articles_without_ancestors(self):
+        '''Required to ensure that the update_page method is able to update
+        the confluence page even though it doesn't have an ancestors field'''
+
+        page_id = '372274410'
+        html = '<p> This is a test </p>'
+        self.git2sc.pages = {}
+        self.git2sc.pages[page_id] = {
+            'version': {
+                'number': 1
+            },
+            'title': 'Test page title',
+        }
+
+        data = {
+            'id': page_id,
+            'type': 'page',
+            'title': 'Test page title',
+            'version': {'number': 2},
+            'ancestors': [],
+            'body': {
+                'storage':
+                {
+                    'representation': 'storage',
+                    'value': html,
+                }
+            }
+        }
+        data_json = json.dumps(data)
+        self.json.dumps.return_value = data_json
+
+        self.git2sc.update_page(page_id, html)
+
+        self.assertEqual(
+            self.requests.put.assert_called_with(
+                '{}/content/{}'.format(
+                    self.api_url,
+                    page_id,
+                ),
+                data=data_json,
+                auth=self.auth,
+                headers={'Content-Type': 'application/json'},
+            ),
+            None,
+        )
+        self.assertTrue(self.requests_error.called)
+
+    @patch('git2sc.git2sc.Git2SC.get_page_info')
     def test_can_update_articles_not_in_pages(self, getPageInfoMock):
         '''Required to ensure that the update_page method can update a page
         even though the pages attribute is empty'''
@@ -402,11 +449,11 @@ class TestGit2SC(unittest.TestCase):
             openMock.return_value.__enter__.return_value.read.return_value
         )
 
-    @patch('git2sc.git2sc.Git2SC._safe_load_file', autospect=True)
-    @patch('git2sc.git2sc.subprocess', autospect=True)
-    def test_can_process_md(self, subprocessMock, loadfileMock):
+    @patch('git2sc.git2sc.Git2SC._safe_load_file')
+    @patch('git2sc.git2sc.pypandoc')
+    def test_can_process_md(self, pypandocMock, loadfileMock):
         '''Required to ensure that we can transform md files to html'''
-        path_to_file = '/path/to/file.md'
+        path_to_file = '/path/to/file'
         result = self.git2sc._process_md(path_to_file)
 
         self.assertEqual(
@@ -414,22 +461,15 @@ class TestGit2SC(unittest.TestCase):
             None,
         )
         self.assertEqual(
-            subprocessMock.check_output.assert_called_with(
-                [
-                    'pandoc',
-                    loadfileMock.return_value,
-                    '-t',
-                    'html',
-                    '-o',
-                    '-',
-                ],
-                shell=False,
+            pypandocMock.convert_file.assert_called_with(
+                loadfileMock.return_value,
+                'html',
             ),
             None,
         )
         self.assertEqual(
             result,
-            subprocessMock.check_output.return_value.decode.return_value
+            pypandocMock.return_value
         )
 
     @patch('git2sc.git2sc.Git2SC._process_adoc', autospect=True)
@@ -437,7 +477,7 @@ class TestGit2SC(unittest.TestCase):
         '''Required to ensure that the import_file method as a wrapper
         of the _process_* recognizes asciidoc files'''
         path_to_file = '/path/to/file.adoc'
-        self.os.path.splitext.return_value = ['/path/to/file', '.adoc']
+        self.os.path.splitext.side_effect = os.path.splitext
         html = self.git2sc.import_file(path_to_file)
         self.assertEqual(
             adocMock.assert_called_with(path_to_file),
@@ -453,7 +493,7 @@ class TestGit2SC(unittest.TestCase):
         '''Required to ensure that the import_file method as a wrapper
         of the _process_* recognizes html files'''
         path_to_file = '/path/to/file.html'
-        self.os.path.splitext.return_value = ['/path/to/file', '.html']
+        self.os.path.splitext.side_effect = os.path.splitext
         html = self.git2sc.import_file(path_to_file)
         self.assertEqual(
             htmlMock.assert_called_with(path_to_file),
@@ -469,7 +509,7 @@ class TestGit2SC(unittest.TestCase):
         '''Required to ensure that the import_file method as a wrapper
         of the _process_* recognizes markdown files'''
         path_to_file = '/path/to/file.md'
-        self.os.path.splitext.return_value = ['/path/to/file', '.md']
+        self.os.path.splitext.side_effect = os.path.splitext
         html = self.git2sc.import_file(path_to_file)
         self.assertEqual(
             mdMock.assert_called_with(path_to_file),
@@ -779,6 +819,7 @@ class TestGit2SC(unittest.TestCase):
             ),
             None
         )
+
 
 class TestGit2SC_requests_error(unittest.TestCase):
     '''Test class for the Git2SC _requests_error method'''
