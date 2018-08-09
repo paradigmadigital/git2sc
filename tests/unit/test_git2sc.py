@@ -1,5 +1,5 @@
+import os
 import json
-import pytest
 import unittest
 from unittest.mock import patch, Mock
 from git2sc.git2sc import Git2SC, UnknownExtension
@@ -24,10 +24,14 @@ class TestGit2SC(unittest.TestCase):
         self.json_patch = patch('git2sc.git2sc.json')
         self.json = self.json_patch.start()
 
+        self.os_patch = patch('git2sc.git2sc.os', autospect=True)
+        self.os = self.os_patch.start()
+
     def tearDown(self):
         self.requests_patch.stop()
         self.requests_error_patch.stop()
         self.json_patch.stop()
+        self.os_patch.stop()
 
     def test_has_auth_set(self):
         'Required attribute for some methods'
@@ -300,9 +304,8 @@ class TestGit2SC(unittest.TestCase):
         )
         self.assertTrue(self.requests_error.called)
 
-    @patch('git2sc.git2sc.os')
     @patch('git2sc.git2sc.shlex')
-    def test_can_load_files_safely(self, shlexMock, osMock):
+    def test_can_load_files_safely(self, shlexMock):
         '''Required to ensure that we can load files in a safe way'''
         path_to_file = '/path/to/file'
 
@@ -313,7 +316,7 @@ class TestGit2SC(unittest.TestCase):
             None,
         )
         self.assertEqual(
-            osMock.path.expanduser.assert_called_with(
+            self.os.path.expanduser.assert_called_with(
                 shlexMock.quote.return_value,
             ),
             None,
@@ -354,7 +357,7 @@ class TestGit2SC(unittest.TestCase):
     @patch('git2sc.git2sc.open')
     def test_can_process_html(self, openMock, loadfileMock):
         '''Required to ensure that we can load html files'''
-        path_to_file = '/path/to/file'
+        path_to_file = '/path/to/file.html'
         result = self.git2sc._process_html(path_to_file)
 
         self.assertEqual(
@@ -401,6 +404,7 @@ class TestGit2SC(unittest.TestCase):
         '''Required to ensure that the import_file method as a wrapper
         of the _process_* recognizes asciidoc files'''
         path_to_file = '/path/to/file.adoc'
+        self.os.path.splitext.side_effect = os.path.splitext
         html = self.git2sc.import_file(path_to_file)
         self.assertEqual(
             adocMock.assert_called_with(path_to_file),
@@ -416,6 +420,7 @@ class TestGit2SC(unittest.TestCase):
         '''Required to ensure that the import_file method as a wrapper
         of the _process_* recognizes html files'''
         path_to_file = '/path/to/file.html'
+        self.os.path.splitext.side_effect = os.path.splitext
         html = self.git2sc.import_file(path_to_file)
         self.assertEqual(
             htmlMock.assert_called_with(path_to_file),
@@ -431,6 +436,7 @@ class TestGit2SC(unittest.TestCase):
         '''Required to ensure that the import_file method as a wrapper
         of the _process_* recognizes markdown files'''
         path_to_file = '/path/to/file.md'
+        self.os.path.splitext.side_effect = os.path.splitext
         html = self.git2sc.import_file(path_to_file)
         self.assertEqual(
             mdMock.assert_called_with(path_to_file),
