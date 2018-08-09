@@ -23,10 +23,14 @@ class TestGit2SC(unittest.TestCase):
         self.json_patch = patch('git2sc.git2sc.json')
         self.json = self.json_patch.start()
 
+        self.os_patch = patch('git2sc.git2sc.os', autospect=True)
+        self.os = self.os_patch.start()
+
     def tearDown(self):
         self.requests_patch.stop()
         self.requests_error_patch.stop()
         self.json_patch.stop()
+        self.os_patch.stop()
 
     def test_has_auth_set(self):
         'Required attribute for some methods'
@@ -299,10 +303,9 @@ class TestGit2SC(unittest.TestCase):
         )
         self.assertTrue(self.requests_error.called)
 
-    @patch('git2sc.git2sc.os')
     @patch('git2sc.git2sc.shlex')
     @patch('git2sc.git2sc.subprocess')
-    def test_can_process_adoc(self, subprocessMock, shlexMock, osMock):
+    def test_can_process_adoc(self, subprocessMock, shlexMock):
         '''Required to ensure that we can transform adoc files to html'''
         path_to_file = '/path/to/file'
         result = self.git2sc._process_adoc(path_to_file)
@@ -312,7 +315,7 @@ class TestGit2SC(unittest.TestCase):
             None,
         )
         self.assertEqual(
-            osMock.path.expanduser.assert_called_with(
+            self.os.path.expanduser.assert_called_with(
                 shlexMock.quote.return_value,
             ),
             None,
@@ -323,7 +326,7 @@ class TestGit2SC(unittest.TestCase):
                     'asciidoctor',
                     '-b',
                     'xhtml',
-                    osMock.path.expanduser.return_value,
+                    self.os.path.expanduser.return_value,
                     '-o',
                     '-',
                 ],
@@ -337,12 +340,11 @@ class TestGit2SC(unittest.TestCase):
             return_value.replace('<!DOCTYPE html>\n', '')
         )
 
-    @patch('git2sc.git2sc.os')
     @patch('git2sc.git2sc.shlex')
     @patch('git2sc.git2sc.open')
-    def test_can_process_html(self, openMock, shlexMock, osMock):
+    def test_can_process_html(self, openMock, shlexMock):
         '''Required to ensure that we can load html files'''
-        path_to_file = '/path/to/file'
+        path_to_file = '/path/to/file.html'
         result = self.git2sc._process_html(path_to_file)
 
         self.assertEqual(
@@ -350,14 +352,14 @@ class TestGit2SC(unittest.TestCase):
             None,
         )
         self.assertEqual(
-            osMock.path.expanduser.assert_called_with(
+            self.os.path.expanduser.assert_called_with(
                 shlexMock.quote.return_value,
             ),
             None,
         )
         self.assertEqual(
             openMock.assert_called_with(
-                osMock.path.expanduser.return_value,
+                self.os.path.expanduser.return_value,
                 'r',
             ),
             None,
@@ -372,6 +374,7 @@ class TestGit2SC(unittest.TestCase):
         '''Required to ensure that the import_file method as a wrapper
         of the _process_* recognizes asciidoc files'''
         path_to_file = '/path/to/file.adoc'
+        self.os.path.splitext.return_value = ['/path/to/file', '.adoc']
         html = self.git2sc.import_file(path_to_file)
         self.assertEqual(
             adocMock.assert_called_with(path_to_file),
@@ -387,6 +390,7 @@ class TestGit2SC(unittest.TestCase):
         '''Required to ensure that the import_file method as a wrapper
         of the _process_* recognizes html files'''
         path_to_file = '/path/to/file.html'
+        self.os.path.splitext.return_value = ['/path/to/file', '.html']
         html = self.git2sc.import_file(path_to_file)
         self.assertEqual(
             htmlMock.assert_called_with(path_to_file),
