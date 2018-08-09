@@ -88,5 +88,13 @@ def load_parser():
         default=['.git', '.gitignore', '.gitmodules'],
         help="List of directories to exclude",
     )
+    upload_parser.add_argument(
+        "-p",
+        "--parent_id",
+        type=str,
+        nargs='?',
+        default=None,
+        help="Parent id of the article to create",
+    )
     argcomplete.autocomplete(parser)
     return parser

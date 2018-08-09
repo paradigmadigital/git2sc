@@ -131,3 +131,17 @@ class TestArgparse(unittest.TestCase):
             ]
         )
         self.assertEqual(parsed.exclude, ['excluded_dir1', 'excluded_dir2'])
+
+    def test_has_subcommand_upload_directory_can_specify_parent_id(self):
+        '''Required to ensure that the parser is correctly configured to
+        upload a directory to a parent article'''
+        parsed = self.parser.parse_args(
+            [
+                'TST',
+                'upload',
+                '/path/to/directory',
+                '-p',
+                'parent_id',
+            ]
+        )
+        self.assertEqual(parsed.parent_id, 'parent_id')
