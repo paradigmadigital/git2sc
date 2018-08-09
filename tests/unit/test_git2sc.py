@@ -14,7 +14,6 @@ class TestGit2SC(unittest.TestCase):
         self.auth_string = 'user:password'
         self.auth = tuple(self.auth_string.split(':'))
         self.space = 'TST'
-        self.git2sc = Git2SC(self.api_url, self.auth_string, self.space)
 
         self.requests_patch = patch('git2sc.git2sc.requests', autospect=True)
         self.requests = self.requests_patch.start()
@@ -30,11 +29,23 @@ class TestGit2SC(unittest.TestCase):
         self.os_patch = patch('git2sc.git2sc.os', autospect=True)
         self.os = self.os_patch.start()
 
+        self.print_patch = patch('git2sc.git2sc.print', autospect=True)
+        self.print = self.print_patch.start()
+
+        self.getspacearticles_patch = patch(
+            'git2sc.git2sc.Git2SC.get_space_articles',
+            autospect=True,
+        )
+        self.getspacearticles = self.getspacearticles_patch.start()
+        self.git2sc = Git2SC(self.api_url, self.auth_string, self.space)
+
     def tearDown(self):
         self.requests_patch.stop()
         self.requests_error_patch.stop()
+        self.print.stop()
         self.json_patch.stop()
         self.os_patch.stop()
+        self.getspacearticles_patch.stop()
 
     def test_has_auth_set(self):
         'Required attribute for some methods'
@@ -55,6 +66,12 @@ class TestGit2SC(unittest.TestCase):
         'Required attribute for some methods'
 
         self.assertEqual(self.git2sc.api_url, self.api_url)
+
+    def test_get_space_articles_called_on_init(self):
+        '''Required to test that get_space_articles get called on init, this
+        is a requirement for create_page, update_page and other methods '''
+
+        self.assertTrue(self.getspacearticles.called)
 
     def test_can_get_page_info(self):
         '''Required to ensure that the get_page_info method calls the correct
@@ -101,6 +118,7 @@ class TestGit2SC(unittest.TestCase):
         correct api endpoint and returns a dictionary with the desired
         pages as a dictionary of dictionaries'''
 
+        self.getspacearticles_patch.stop()
         self.requests.get.return_value.json.return_value = {
             "results": [
                 {
@@ -141,6 +159,7 @@ class TestGit2SC(unittest.TestCase):
         )
         self.assertTrue(self.requests_error.called)
         self.assertEqual(self.git2sc.pages, desired_pages)
+        self.getspacearticles_patch.start()
 
     def test_can_update_articles(self):
         '''Required to ensure that the update_page method posts to the
@@ -332,6 +351,56 @@ class TestGit2SC(unittest.TestCase):
         '''Required to ensure that the create_page method posts to the
         correct api endpoint with the correct data structure if inheritance
         is set'''
+
+        html = '<p> This is a new page </p>'
+        parent_id = '372274410'
+
+        requests_data = {
+            'type': 'page',
+            'ancestors': [{'id': parent_id}],
+            'title': 'new title',
+            'space': {'key': self.space},
+            'body': {
+                'storage': {
+                    'value': html,
+                    'representation': 'storage'
+                },
+            },
+        }
+        requests_data_json = json.dumps(requests_data)
+        self.json.dumps.return_value = requests_data_json
+
+        response_data = {'id': '412254212', 'type': 'page'}
+        response_data_json = json.dumps(response_data)
+        self.requests.post.return_value.text = response_data_json
+        self.json.loads.return_value = response_data
+
+        page_id = self.git2sc.create_page('new title', html, parent_id)
+
+        self.assertEqual(
+            self.json.dumps.assert_called_with(requests_data),
+            None,
+        )
+        self.assertEqual(
+            self.requests.post.assert_called_with(
+                '{}/content'.format(self.api_url),
+                data=requests_data_json,
+                auth=self.auth,
+                headers={'Content-Type': 'application/json'},
+            ),
+            None,
+        )
+        self.assertTrue(self.requests_error.called)
+        self.assertEqual(
+            self.json.loads.assert_called_with(response_data_json),
+            None,
+        )
+        self.assertEqual(page_id, '412254212')
+
+    def test_can_create_articles_when_name_exists(self):
+        '''In Confluence even though they use an article_id, you can't have two
+        articles with the same name, so this test makes sure that in this case
+        the title will be '{}_{}'.format(directoryname, filename) -.-'''
 
         html = '<p> This is a new page </p>'
         parent_id = '372274410'
@@ -862,43 +931,30 @@ class TestGit2SC(unittest.TestCase):
             None
         )
 
-
-class TestGit2SC_requests_error(unittest.TestCase):
-    '''Test class for the Git2SC _requests_error method'''
-
-    def setUp(self):
-        self.api_url = 'https://confluence.sucks.com/wiki/rest/api'
-        self.auth_string = 'user:password'
-        self.auth = tuple(self.auth_string.split(':'))
-        self.space = 'TST'
-        self.git2sc = Git2SC(self.api_url, self.auth_string, self.space)
-
-        self.requests_object = Mock()
-
-        self.print_patch = patch('git2sc.git2sc.print', autospect=True)
-        self.print = self.print_patch.start()
-
-    def tearDown(self):
-        self.print.stop()
-
     def test_request_error_display_message_if_rc_not_200(self):
         '''Required to ensure that the _requests_error method returns the
         desired structure inside the print when a requests instance has a
         return code different from 200'''
 
+        self.requests_error_patch.stop()
+        self.requests_object = Mock()
         self.requests_object.status_code = 400
         self.requests_object.text = json.dumps({
             'statusCode': 400,
             'message': 'Error message',
         })
+        self.json.loads.side_effect = json.loads
         with self.assertRaises(Exception) as err:
             self.git2sc._requests_error(self.requests_object)
         self.assertEqual(err.exception.args[0], 'Error 400: Error message')
+        self.requests_error_patch.start()
 
     def test_request_error_do_nothing_if_rc_is_200(self):
         '''Required to ensure that the _requests_error method does nothing
         if the return code is 200'''
 
+        self.requests_error_patch.stop()
+        self.requests_object = Mock()
         self.requests_object.status_code = 200
         self.requests_object.text = json.dumps({
             'statusCode': 200,
@@ -906,3 +962,4 @@ class TestGit2SC_requests_error(unittest.TestCase):
         })
         self.git2sc._requests_error(self.requests_object)
         self.assertFalse(self.print.called)
+        self.requests_error_patch.start()
