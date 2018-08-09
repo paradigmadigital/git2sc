@@ -12,7 +12,8 @@ class TestGit2SC(unittest.TestCase):
         self.api_url = 'https://confluence.sucks.com/wiki/rest/api'
         self.auth_string = 'user:password'
         self.auth = tuple(self.auth_string.split(':'))
-        self.git2sc = Git2SC(self.api_url, self.auth_string)
+        self.space = 'TST'
+        self.git2sc = Git2SC(self.api_url, self.auth_string, self.space)
 
         self.requests_patch = patch('git2sc.git2sc.requests')
         self.requests = self.requests_patch.start()
@@ -37,6 +38,11 @@ class TestGit2SC(unittest.TestCase):
         'Required attribute for some methods'
 
         self.assertEqual(self.git2sc.auth, self.auth)
+
+    def test_has_space_set(self):
+        'Required attribute for some methods'
+
+        self.assertEqual(self.git2sc.space, self.space)
 
     def test_has_empty_pages_by_default(self):
         'Required to initialize the dictionary'
@@ -71,16 +77,15 @@ class TestGit2SC(unittest.TestCase):
         '''Required to ensure that the get_space_homepage method calls the
         correct api endpoint and returns the article id'''
 
-        space_id = 'TST'
         self.requests.get.return_value.json.return_value = {
             '_expandable': {'homepage': '/rest/api/content/372334010'},
         }
-        result = self.git2sc.get_space_homepage(space_id)
+        result = self.git2sc.get_space_homepage()
         self.assertEqual(
             self.requests.get.assert_called_with(
                 '{}/space/{}'.format(
                     self.api_url,
-                    space_id,
+                    self.space,
                 ),
                 auth=self.auth
             ),
@@ -94,7 +99,6 @@ class TestGit2SC(unittest.TestCase):
         correct api endpoint and returns a dictionary with the desired
         pages as a dictionary of dictionaries'''
 
-        space_id = 'TST'
         self.requests.get.return_value.json.return_value = {
             "results": [
                 {
@@ -121,13 +125,13 @@ class TestGit2SC(unittest.TestCase):
                 "status": "current",
             },
         }
-        self.git2sc.get_space_articles(space_id)
+        self.git2sc.get_space_articles()
         self.assertEqual(
             self.requests.get.assert_called_with(
                 '{}/content/?spaceKey={}?expand='
                 'ancestors,body.storage,version'.format(
                     self.api_url,
-                    space_id,
+                    self.space,
                 ),
                 auth=self.auth
             ),
@@ -236,7 +240,7 @@ class TestGit2SC(unittest.TestCase):
         requests_data = {
             'type': 'page',
             'title': 'new title',
-            'space': {'key': 'TST'},
+            'space': {'key': self.space},
             'body': {
                 'storage': {
                     'value': html,
@@ -247,7 +251,7 @@ class TestGit2SC(unittest.TestCase):
         requests_data_json = json.dumps(requests_data)
         self.json.dumps.return_value = requests_data_json
 
-        self.git2sc.create_page('TST', 'new title', html)
+        self.git2sc.create_page('new title', html)
 
         self.assertEqual(
             self.json.dumps.assert_called_with(requests_data),
@@ -276,7 +280,7 @@ class TestGit2SC(unittest.TestCase):
             'type': 'page',
             'ancestors': [{'id': parent_id}],
             'title': 'new title',
-            'space': {'key': 'TST'},
+            'space': {'key': self.space},
             'body': {
                 'storage': {
                     'value': html,
@@ -287,7 +291,7 @@ class TestGit2SC(unittest.TestCase):
         requests_data_json = json.dumps(requests_data)
         self.json.dumps.return_value = requests_data_json
 
-        self.git2sc.create_page('TST', 'new title', html, parent_id)
+        self.git2sc.create_page('new title', html, parent_id)
 
         self.assertEqual(
             self.json.dumps.assert_called_with(requests_data),
@@ -491,7 +495,8 @@ class TestGit2SC_requests_error(unittest.TestCase):
         self.api_url = 'https://confluence.sucks.com/wiki/rest/api'
         self.auth_string = 'user:password'
         self.auth = tuple(self.auth_string.split(':'))
-        self.git2sc = Git2SC(self.api_url, self.auth_string)
+        self.space = 'TST'
+        self.git2sc = Git2SC(self.api_url, self.auth_string, self.space)
 
         self.requests_object = Mock()
 
