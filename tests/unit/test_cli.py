@@ -10,7 +10,14 @@ class TestArgparse(unittest.TestCase):
         '''Required to ensure that the parser is correctly configured to
         update an article as expected'''
         parsed = self.parser.parse_args(
-            ['article', 'update', '--html', '1', '<p>Updated article</p>']
+            [
+                'TST',
+                'article',
+                'update',
+                '--html',
+                '1',
+                '<p>Updated article</p>'
+            ]
         )
         self.assertEqual(parsed.subcommand, 'article')
         self.assertEqual(parsed.article_command, 'update')
@@ -24,10 +31,10 @@ class TestArgparse(unittest.TestCase):
 
         parsed = self.parser.parse_args(
             [
+                'TST',
                 'article',
                 'create',
                 '--html',
-                'TST',
                 'new article',
                 '<p>New article!</p>',
             ]
@@ -46,12 +53,12 @@ class TestArgparse(unittest.TestCase):
 
         parsed = self.parser.parse_args(
             [
+                'TST',
                 'article',
                 'create',
                 '--html',
                 '-p',
                 '1111',
-                'TST',
                 'new article',
                 '<p>New article!</p>',
             ]
@@ -70,9 +77,9 @@ class TestArgparse(unittest.TestCase):
 
         parsed = self.parser.parse_args(
             [
+                'TST',
                 'article',
                 'create',
-                'TST',
                 'new article',
                 '/path/to/article',
             ]
@@ -89,10 +96,11 @@ class TestArgparse(unittest.TestCase):
         update an article as expected'''
 
         parsed = self.parser.parse_args(
-            ['article', 'delete', '1']
+            ['TST', 'article', 'delete', '1']
         )
         self.assertEqual(parsed.subcommand, 'article')
         self.assertEqual(parsed.article_command, 'delete')
+        self.assertEqual(parsed.space, 'TST')
         self.assertEqual(parsed.article_id, '1')
 
     def test_has_subcommand_upload_directory(self):
@@ -100,25 +108,26 @@ class TestArgparse(unittest.TestCase):
         upload a directory'''
         parsed = self.parser.parse_args(
             [
+                'TST',
                 'upload',
                 '/path/to/directory',
-                'TST',
             ]
         )
         self.assertEqual(parsed.subcommand, 'upload')
         self.assertEqual(parsed.path, '/path/to/directory')
-        self.assertEqual(parsed.exclude, ['.git'])
+        self.assertEqual(parsed.exclude, ['.git', '.gitignore', '.gitmodules'])
 
     def test_has_subcommand_upload_directory_can_specify_excluded_dirs(self):
         '''Required to ensure that the parser is correctly configured to
         upload a directory with excluded directories'''
         parsed = self.parser.parse_args(
             [
+                'TST',
                 'upload',
                 '/path/to/directory',
-                'TST',
                 '--exclude',
-                ['excluded_dir'],
+                'excluded_dir1',
+                'excluded_dir2',
             ]
         )
-        self.assertEqual(parsed.exclude, ['excluded_dir'])
+        self.assertEqual(parsed.exclude, ['excluded_dir1', 'excluded_dir2'])

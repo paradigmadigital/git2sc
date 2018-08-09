@@ -10,6 +10,11 @@ def load_parser():
         description="Synchronize a Confluence space with a "
         "git documentation repository"
     )
+    parser.add_argument(
+        "space",
+        type=str,
+        help='Confluence space id',
+    )
 
     subcommand_parser = parser.add_subparsers(
         dest='subcommand',
@@ -40,11 +45,6 @@ def load_parser():
     )
 
     article_create_parser = article_command_parser.add_parser('create')
-    article_create_parser.add_argument(
-        "space",
-        type=str,
-        help='Confluence space id',
-    )
     article_create_parser.add_argument(
         "title",
         type=str,
@@ -83,16 +83,9 @@ def load_parser():
     )
 
     upload_parser.add_argument(
-        "space",
-        type=str,
-        help='Confluence space id',
-    )
-
-    upload_parser.add_argument(
         "--exclude",
-        type=list,
-        nargs='?',
-        default=['.git'],
+        nargs='*',
+        default=['.git', '.gitignore', '.gitmodules'],
         help="List of directories to exclude",
     )
     argcomplete.autocomplete(parser)

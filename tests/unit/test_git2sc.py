@@ -179,7 +179,7 @@ class TestGit2SC(unittest.TestCase):
             }
         }
         data_json = json.dumps(data)
-        self.json.dumps.return_value = data_json
+        self.json.dumps.side_effect = json.dumps
 
         self.git2sc.update_page(page_id, html)
 
@@ -209,6 +209,7 @@ class TestGit2SC(unittest.TestCase):
                 'number': 1
             },
             'title': 'Test page title',
+            'ancestors': [],
         }
 
         data = {
@@ -226,7 +227,7 @@ class TestGit2SC(unittest.TestCase):
             }
         }
         data_json = json.dumps(data)
-        self.json.dumps.return_value = data_json
+        self.json.dumps.side_effect = json.dumps
 
         self.git2sc.update_page(page_id, html)
 
@@ -298,7 +299,7 @@ class TestGit2SC(unittest.TestCase):
             },
         }
         requests_data_json = json.dumps(requests_data)
-        self.json.dumps.return_value = requests_data_json
+        self.json.dumps.side_effect = json.dumps
 
         response_data = {'id': '412254212', 'type': 'page'}
         response_data_json = json.dumps(response_data)
@@ -584,20 +585,28 @@ class TestGit2SC(unittest.TestCase):
             │   └── README.md
             ├── .git
             │   └── git_file
+            ├── .gitignore
             ├── parent_article.adoc
             └── README.md
 
-        It should ignore the .git and excluded_dir directories as they are in
-        the excluded list
+        It should ignore the .git, .gitignore and excluded_dir directories as
+        they are in the excluded list
         '''
 
         def create_side_effect(directory_name, parent_id=None):
             return 'id_{}'.format(os.path.basename(directory_name))
 
-        excluded_directories = ['.git', 'excluded_dir']
+        def import_side_effect(file_name):
+            if 'unknown.file' in file_name:
+                raise UnknownExtension
+            return "article_id"
+
+        excluded_directories = ['.git', '.gitignore', 'excluded_dir']
         readmeMock.side_effect = create_side_effect
+        importfileMock.side_effect = import_side_effect
         self.os.walk.side_effect = os.walk
         self.os.path.basename.side_effect = os.path.basename
+        self.os.path.join.side_effect = os.path.join
 
         self.git2sc.directory_full_upload(
             'tests/data/repository_example',
@@ -618,19 +627,31 @@ class TestGit2SC(unittest.TestCase):
 
         # Assert that the files are created
         self.assertEqual(
+            importfileMock.mock_calls,
+            [
+                call('tests/data/repository_example/README.md'),
+                call('tests/data/repository_example/unknown.file'),
+                call('tests/data/repository_example/parent_article.adoc'),
+                call('tests/data/repository_example/.gitignore'),
+                call(
+                    'tests/data/repository_example/formation/'
+                    'formation_guide.adoc'),
+                call('tests/data/repository_example/formation/README.md'),
+                call('tests/data/repository_example/formation/'
+                     'ansible/README.md'),
+                call('tests/data/repository_example/formation/'
+                     'ansible/molecule/README.md'),
+                call('tests/data/repository_example/formation/'
+                     'ansible/molecule/child_child_doc.adoc'),
+            ]
+        )
+
+        self.assertEqual(
             createpageMock.mock_calls,
             [
-                call('parent_article', importfileMock.return_value, None),
-                call(
-                    'formation_guide',
-                    importfileMock.return_value,
-                    'id_formation'
-                ),
-                call(
-                    'child_child_doc',
-                    importfileMock.return_value,
-                    'id_molecule'
-                )
+                call('parent_article', 'article_id', None),
+                call('formation_guide', 'article_id', 'id_formation'),
+                call('child_child_doc', 'article_id', 'id_molecule')
             ]
         )
 
@@ -750,6 +771,27 @@ class TestGit2SC(unittest.TestCase):
             importfileMock.return_value
         )
 
+    @patch('git2sc.git2sc.Git2SC.import_file', autospect=True)
+    def test_discover_directory_readme_works_when_no_readme(
+        self,
+        importfileMock,
+    ):
+        '''Given a directory path test that git2sc where no README exist return
+        "No README here, keep on looking"'''
+
+        directory_path = '/path/to/directory'
+        self.os.path.join.side_effect = os.path.join
+        self.os.path.basename.side_effect = os.path.basename
+
+        self.os.path.isfile.return_value = False
+
+        result = self.git2sc._discover_directory_readme(directory_path)
+
+        self.assertEqual(
+            result,
+            "No README here, keep on looking :("
+        )
+
     @patch('git2sc.git2sc.Git2SC.create_page', autospect=True)
     @patch('git2sc.git2sc.Git2SC._discover_directory_readme', autospect=True)
     def test_can_process_directory_readme(
@@ -849,13 +891,9 @@ class TestGit2SC_requests_error(unittest.TestCase):
             'statusCode': 400,
             'message': 'Error message',
         })
-        self.git2sc._requests_error(self.requests_object)
-        self.assertEqual(
-            self.print.assert_called_with(
-                'Error 400: Error message'
-            ),
-            None,
-        )
+        with self.assertRaises(Exception) as err:
+            self.git2sc._requests_error(self.requests_object)
+        self.assertEqual(err.exception.args[0], 'Error 400: Error message')
 
     def test_request_error_do_nothing_if_rc_is_200(self):
         '''Required to ensure that the _requests_error method does nothing

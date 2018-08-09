@@ -23,9 +23,9 @@ class Git2SC():
         else:
             response = json.loads(requests_object.text)
 
-            print('Error {}: {}'.format(
+            raise Exception('Error {}: {}'.format(
                 response['statusCode'],
-                response['message'],
+                response['message']
             ))
 
     def get_page_info(self, pageid):
@@ -74,11 +74,11 @@ class Git2SC():
         version = int(self.pages[pageid]['version']['number']) + 1
 
         try:
-            ancestors = self.pages[pageid]['ancestors'][-1]
-            del ancestors['_links']
-            del ancestors['_expandable']
-            del ancestors['extensions']
-        except KeyError:
+            ancestors = [self.pages[pageid]['ancestors'][-1]]
+            del ancestors[0]['_links']
+            del ancestors[0]['_expandable']
+            del ancestors[0]['extensions']
+        except IndexError:
             ancestors = []
 
         if title is not None:
@@ -89,7 +89,7 @@ class Git2SC():
             'type': 'page',
             'title': self.pages[pageid]['title'],
             'version': {'number': version},
-            'ancestors': [ancestors],
+            'ancestors': ancestors,
             'body': {
                 'storage':
                 {
@@ -99,13 +99,13 @@ class Git2SC():
             }
         }
 
-        data = json.dumps(data)
+        data_json = json.dumps(data)
 
         url = '{base}/content/{pageid}'.format(base=self.api_url, pageid=pageid)
 
         r = requests.put(
             url,
-            data=data,
+            data=data_json,
             auth=self.auth,
             headers={'Content-Type': 'application/json'}
         )
@@ -211,6 +211,8 @@ class Git2SC():
             readme_file = adoc_file
         elif os.path.isfile(md_file):
             readme_file = md_file
+        else:
+            return "No README here, keep on looking :("
 
         return self.import_file(readme_file)
 
@@ -243,7 +245,7 @@ class Git2SC():
     def directory_full_upload(
         self,
         path,
-        excluded_directories,
+        excluded_items,
         parent_id=None
     ):
         '''Takes a path to a directory and crawls all the subdirectories and
@@ -266,15 +268,22 @@ class Git2SC():
             for file in files:
                 filename = os.path.basename(file).split('.')[:-1][0]
 
-                if not filename == 'README':
+                try:
+                    html = self.import_file(
+                        os.path.join(root, file)
+                    )
+                except UnknownExtension:
+                    continue
+
+                if not filename == 'README' and file not in excluded_items:
                     self.create_page(
                         filename,
-                        self.import_file(file),
+                        html,
                         parent_id,
                     )
 
             for directory in directories:
-                if directory in excluded_directories:
+                if directory in excluded_items:
                     directories.remove(directory)
 
 
