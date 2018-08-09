@@ -120,18 +120,20 @@ class TestGit2SC(unittest.TestCase):
 
         self.getspacearticles_patch.stop()
         self.requests.get.return_value.json.return_value = {
-            "results": [
-                {
-                    "id": "371111110",
-                    "type": "page",
-                    "status": "current",
-                },
-                {
-                    "id": "372222220",
-                    "type": "page",
-                    "status": "current",
-                },
-            ]
+            "page": {
+                "results": [
+                    {
+                        "id": "371111110",
+                        "type": "page",
+                        "status": "current",
+                    },
+                    {
+                        "id": "372222220",
+                        "type": "page",
+                        "status": "current",
+                    },
+                ]
+            }
         }
         desired_pages = {
             '371111110': {
@@ -148,10 +150,10 @@ class TestGit2SC(unittest.TestCase):
         self.git2sc.get_space_articles()
         self.assertEqual(
             self.requests.get.assert_called_with(
-                '{}/content/?spaceKey={}'.format(
+                '{}/space/{}/content'.format(
                     self.api_url,
                     self.space,
-                ),
+                ) + '?expand=body.storage&limit=5000&start=0',
                 auth=self.auth
             ),
             None,
@@ -319,7 +321,8 @@ class TestGit2SC(unittest.TestCase):
         self.git2sc.update_page(page_id, html, 'new title')
         self.assertEqual(self.git2sc.pages[page_id]['title'], 'new title')
 
-    def test_can_create_articles_as_parent(self):
+    @patch('git2sc.git2sc.Git2SC.get_page_info', autospect=True)
+    def test_can_create_articles_as_parent(self, getPageInfoMock):
         '''Required to ensure that the create_page method posts to the
         correct api endpoint with the correct data structure if no
         inheritance is set'''
@@ -363,6 +366,10 @@ class TestGit2SC(unittest.TestCase):
         self.assertTrue(self.requests_error.called)
         self.assertEqual(
             self.json.loads.assert_called_with(response_data_json),
+            None,
+        )
+        self.assertEqual(
+            getPageInfoMock.assert_called_with(page_id),
             None,
         )
         self.assertEqual(page_id, '412254212')
@@ -679,6 +686,7 @@ class TestGit2SC(unittest.TestCase):
         importfileMock.side_effect = import_side_effect
         self.os.walk.side_effect = os.walk
         self.os.path.basename.side_effect = os.path.basename
+        self.os.path.dirname.side_effect = os.path.dirname
         self.os.path.join.side_effect = os.path.join
 
         self.git2sc.directory_full_upload(
@@ -690,10 +698,18 @@ class TestGit2SC(unittest.TestCase):
         self.assertEqual(
             readmeMock.mock_calls,
             [
-                call('tests/data/repository_example/formation'),
-                call('tests/data/repository_example/formation/ansible'),
+                call('tests/data/repository_example/formation', None),
                 call(
-                    'tests/data/repository_example/formation/ansible/molecule'
+                    'tests/data/repository_example/formation/aws',
+                    'id_formation',
+                ),
+                call(
+                    'tests/data/repository_example/formation/ansible',
+                    'id_formation',
+                ),
+                call(
+                    'tests/data/repository_example/formation/ansible/molecule',
+                    'id_ansible',
                 )
             ]
         )
@@ -710,6 +726,7 @@ class TestGit2SC(unittest.TestCase):
                     'tests/data/repository_example/formation/'
                     'formation_guide.adoc'),
                 call('tests/data/repository_example/formation/README.md'),
+                call('tests/data/repository_example/formation/aws/README.md'),
                 call('tests/data/repository_example/formation/'
                      'ansible/README.md'),
                 call('tests/data/repository_example/formation/'

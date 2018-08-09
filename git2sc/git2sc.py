@@ -14,6 +14,7 @@ class Git2SC():
         self.auth = tuple(auth.split(':'))
         self.space = space_id
         self.pages = {}
+        self.get_space_articles()
 
     def _requests_error(self, requests_object):
         '''Print the confluence error'''
@@ -52,22 +53,28 @@ class Git2SC():
     def get_space_articles(self):
         '''Get all the pages of a confluence space'''
 
-        url = '{base}/content/?spaceKey={spaceid}'\
-            '?expand=ancestors,body.storage,version'.format(
+        url = '{base}/space/{spaceid}/'.format(
                 base=self.api_url,
                 spaceid=self.space,
-            )
+            ) + 'content?expand=body.storage&limit=5000&start=0'
+
         r = requests.get(url, auth=self.auth)
         self._requests_error(r)
         self.pages = {}
-        for page in r.json()['results']:
+        for page in r.json()['page']['results']:
             self.pages[page['id']] = page
+
+    def _title_exist(self, title):
+        '''You can't create more than one article with a specified title, test
+        if title exists in the existing pages'''
+        titles = [content['title'] for page, content in self.pages.items()]
+        return title in titles
 
     def update_page(self, pageid, html, title=None):
         '''Update a confluence page with the content of the html variable'''
 
         try:
-            self.pages[pageid]
+            self.pages[pageid]['version']
         except KeyError:
             self.pages[pageid] = self.get_page_info(pageid)
 
@@ -115,9 +122,15 @@ class Git2SC():
     def create_page(self, title, html, parent_id=None):
         '''Create a confluence page with the content of the html variable'''
 
+        new_title = title
+        for counter in range(1, 10):
+            if not self._title_exist(new_title):
+                break
+            new_title = '{}_{}'.format(title, counter)
+
         data = {
             'type': 'page',
-            'title': title,
+            'title': new_title,
             'space': {'key': self.space},
             'body': {
                 'storage': {
@@ -141,8 +154,14 @@ class Git2SC():
             headers={'Content-Type': 'application/json'}
         )
 
-        self._requests_error(r)
-        return json.loads(r.text)['id']
+        try:
+            self._requests_error(r)
+        except:
+            import pdb; pdb.set_trace()  # XXX BREAKPOINT
+
+        pageid = json.loads(r.text)['id']
+        self.pages[pageid] = self.get_page_info(pageid)
+        return pageid
 
     def delete_page(self, pageid):
         '''Delete a confluence page given the pageid'''
@@ -258,15 +277,22 @@ class Git2SC():
         '''
 
         is_root_directory = True
+        parent_ids = {}
         for root, directories, files in os.walk(path):
-            if is_root_directory and parent_id is None:
+            if is_root_directory:
                 self._process_mainpage(root)
                 is_root_directory = False
+                parent_ids[root] = parent_id
             else:
-                parent_id = self._process_directory_readme(root)
+                directory_parent_id = parent_ids[os.path.dirname(root)]
+                parent_id = self._process_directory_readme(
+                    root,
+                    directory_parent_id,
+                )
+                parent_ids[root] = parent_id
 
             for file in files:
-                filename = os.path.basename(file).split('.')[:-1][0]
+                filename = '.'.join(os.path.basename(file).split('.')[:-1])
 
                 try:
                     html = self.import_file(
