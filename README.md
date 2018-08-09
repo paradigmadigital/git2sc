@@ -26,7 +26,7 @@ This command will update the confluence article with id `{{ article_id }}` with
 the content of the file in the path `{{ content }}`.
 
 ```bash
-git2sc article update {{ article_id }} {{ content }}
+git2sc {{ space }} article update {{ article_id }} {{ content }}
 ```
 
 ## Create an article
@@ -36,14 +36,14 @@ with title `{{ title }}` and with the content of the file in the path `{{
 content }}`.
 
 ```bash
-git2sc article create {{ space }} {{ title }} {{ content }}
+git2sc {{ space }} article create {{ title }} {{ content }}
 ```
 
 If you want to make the article a children of another article use the `-p {{
 parent_id }}` flag
 
 ```bash
-git2sc article create -p {{ parent_id }} {{ space }} {{ title }} {{ content }}
+git2sc {{ space }} article create -p {{ parent_id }} {{ title }} {{ content }}
 ```
 
 ## Delete an article
@@ -51,7 +51,33 @@ git2sc article create -p {{ parent_id }} {{ space }} {{ title }} {{ content }}
 This command will delete the confluence article with id `{{ article_id }}`.
 
 ```bash
-git2sc article delete {{ article_id }}
+git2sc {{ space }} article delete {{ article_id }}
+```
+
+## Upload a directory
+
+This command will upload all the contents of a directory to the main page of
+confluence creating a hierarchy of articles equally to the directory tree.
+
+For each directory it will try to load the `README.adoc` or `README.md` to the
+directory confluence page.
+
+```bash
+git2sc {{ space }} upload {{ directory_path }}
+```
+
+Optionally you can exclude some files and directories (by default `.git`,
+`.gitignore`, and `.gitmodules`)
+
+```bash
+git2sc {{ space }} upload {{ directory_path }} --exclude file1 directory1 file2
+```
+
+If you don't want to upload the directory to the main page but starting from an
+article you can specify it with the `-p` flag
+
+```bash
+git2sc {{ space }} upload {{ directory_path }} -p {{ parent_id }}
 ```
 
 # Test

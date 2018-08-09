@@ -637,130 +637,6 @@ class TestGit2SC(unittest.TestCase):
 
         self.assertTrue(self.requests_error.called)
 
-    @patch('git2sc.git2sc.Git2SC.create_page', autospect=True)
-    @patch('git2sc.git2sc.Git2SC._process_directory_readme', autospect=True)
-    @patch('git2sc.git2sc.Git2SC._process_mainpage', autospect=True)
-    @patch('git2sc.git2sc.Git2SC.import_file', autospect=True)
-    def test_can_full_upload_directory(
-        self,
-        importfileMock,
-        mainpageMock,
-        readmeMock,
-        createpageMock,
-    ):
-        '''Given a directory path test that git2sc crawls all the files and
-        uploads them to confluence.
-
-        The repository structure is under tests/data:
-        └── repository_example
-            ├── formation
-            │   ├── ansible
-            │   │   ├── molecule
-            │   │   │   ├── child_child_doc.adoc
-            │   │   │   └── README.md
-            │   │   └── README.md
-            │   ├── excluded_dir
-            │   │   └── excluded_file
-            │   ├── formation_guide.adoc
-            │   └── README.md
-            ├── .git
-            │   └── git_file
-            ├── .gitignore
-            ├── parent_article.adoc
-            └── README.md
-
-        It should ignore the .git, .gitignore and excluded_dir directories as
-        they are in the excluded list
-        '''
-
-        def create_side_effect(directory_name, parent_id=None):
-            return 'id_{}'.format(os.path.basename(directory_name))
-
-        def import_side_effect(file_name):
-            if 'unknown.file' in file_name:
-                raise UnknownExtension
-            return "article_id"
-
-        excluded_directories = ['.git', '.gitignore', 'excluded_dir']
-        readmeMock.side_effect = create_side_effect
-        importfileMock.side_effect = import_side_effect
-        self.os.walk.side_effect = os.walk
-        self.os.path.basename.side_effect = os.path.basename
-        self.os.path.dirname.side_effect = os.path.dirname
-        self.os.path.join.side_effect = os.path.join
-
-        self.git2sc.directory_full_upload(
-            'tests/data/repository_example',
-            excluded_directories,
-        )
-
-        # Assert that the directories are created
-        self.assertEqual(
-            readmeMock.mock_calls,
-            [
-                call('tests/data/repository_example/formation', None),
-                call(
-                    'tests/data/repository_example/formation/aws',
-                    'id_formation',
-                ),
-                call(
-                    'tests/data/repository_example/formation/ansible',
-                    'id_formation',
-                ),
-                call(
-                    'tests/data/repository_example/formation/ansible/molecule',
-                    'id_ansible',
-                )
-            ]
-        )
-
-        # Assert that the files are created
-        self.assertEqual(
-            importfileMock.mock_calls,
-            [
-                call('tests/data/repository_example/README.md'),
-                call('tests/data/repository_example/unknown.file'),
-                call('tests/data/repository_example/parent_article.adoc'),
-                call('tests/data/repository_example/.gitignore'),
-                call(
-                    'tests/data/repository_example/formation/'
-                    'formation_guide.adoc'),
-                call('tests/data/repository_example/formation/README.md'),
-                call('tests/data/repository_example/formation/aws/README.md'),
-                call('tests/data/repository_example/formation/'
-                     'ansible/README.md'),
-                call('tests/data/repository_example/formation/'
-                     'ansible/molecule/README.md'),
-                call('tests/data/repository_example/formation/'
-                     'ansible/molecule/child_child_doc.adoc'),
-            ]
-        )
-
-        self.assertEqual(
-            createpageMock.mock_calls,
-            [
-                call('parent_article', 'article_id', None),
-                call('formation_guide', 'article_id', 'id_formation'),
-                call('child_child_doc', 'article_id', 'id_molecule')
-            ]
-        )
-
-        # Assert that the homepage is created
-        self.assertEqual(
-            mainpageMock.assert_called_with('tests/data/repository_example'),
-            None,
-        )
-
-    @patch('git2sc.git2sc.Git2SC.create_page', autospect=True)
-    @patch('git2sc.git2sc.Git2SC.import_file', autospect=True)
-    @pytest.mark.skip('Not yet implemented')
-    def test_can_full_upload_directory_hanging_from_parent_article(
-        self,
-        importfileMock,
-        createpageMock,
-    ):
-        pass
-
     @patch('git2sc.git2sc.Git2SC.update_page', autospect=True)
     @patch('git2sc.git2sc.Git2SC._discover_directory_readme', autospect=True)
     @patch('git2sc.git2sc.Git2SC.get_space_homepage', autospect=True)
@@ -984,3 +860,190 @@ class TestGit2SC(unittest.TestCase):
         self.git2sc._requests_error(self.requests_object)
         self.assertFalse(self.print.called)
         self.requests_error_patch.start()
+
+    @patch('git2sc.git2sc.Git2SC.create_page', autospect=True)
+    @patch('git2sc.git2sc.Git2SC._process_directory_readme', autospect=True)
+    @patch('git2sc.git2sc.Git2SC._process_mainpage', autospect=True)
+    @patch('git2sc.git2sc.Git2SC.import_file', autospect=True)
+    def test_can_full_upload_directory(
+        self,
+        importfileMock,
+        mainpageMock,
+        readmeMock,
+        createpageMock,
+    ):
+        '''Given a directory path test that git2sc crawls all the files and
+        uploads them to confluence.
+
+        The repository structure is under tests/data:
+        └── repository_example
+            ├── formation
+            │   ├── ansible
+            │   │   ├── molecule
+            │   │   │   ├── child_child_doc.adoc
+            │   │   │   └── README.md
+            │   │   └── README.md
+            │   ├── aws
+            │   │   └── README.md
+            │   ├── excluded_dir
+            │   │   └── excluded_file
+            │   ├── formation_guide.adoc
+            │   └── README.md
+            ├── parent_article.adoc
+            ├── README.md
+            └── unknown.file
+
+        It should ignore the .git, .gitignore and excluded_dir directories as
+        they are in the excluded list
+        '''
+
+        def create_side_effect(directory_name, parent_id=None):
+            return 'id_{}'.format(os.path.basename(directory_name))
+
+        def import_side_effect(file_name):
+            if 'unknown.file' in file_name:
+                raise UnknownExtension
+            return "article_id"
+
+        excluded_directories = ['.git', '.gitignore', 'excluded_dir']
+        readmeMock.side_effect = create_side_effect
+        importfileMock.side_effect = import_side_effect
+        self.os.walk.side_effect = os.walk
+        self.os.path.basename.side_effect = os.path.basename
+        self.os.path.dirname.side_effect = os.path.dirname
+        self.os.path.join.side_effect = os.path.join
+
+        self.git2sc.directory_full_upload(
+            'tests/data/repository_example',
+            excluded_directories,
+        )
+
+        # Assert that the directories are created
+        self.assertEqual(
+            readmeMock.mock_calls,
+            [
+                call('tests/data/repository_example/formation', None),
+                call(
+                    'tests/data/repository_example/formation/aws',
+                    'id_formation',
+                ),
+                call(
+                    'tests/data/repository_example/formation/ansible',
+                    'id_formation',
+                ),
+                call(
+                    'tests/data/repository_example/formation/ansible/molecule',
+                    'id_ansible',
+                )
+            ]
+        )
+
+        # Assert that the files are created
+        self.assertEqual(
+            importfileMock.mock_calls,
+            [
+                call('tests/data/repository_example/README.md'),
+                call('tests/data/repository_example/unknown.file'),
+                call('tests/data/repository_example/parent_article.adoc'),
+                call('tests/data/repository_example/.gitignore'),
+                call(
+                    'tests/data/repository_example/formation/'
+                    'formation_guide.adoc'),
+                call('tests/data/repository_example/formation/README.md'),
+                call('tests/data/repository_example/formation/aws/README.md'),
+                call('tests/data/repository_example/formation/'
+                     'ansible/README.md'),
+                call('tests/data/repository_example/formation/'
+                     'ansible/molecule/README.md'),
+                call('tests/data/repository_example/formation/'
+                     'ansible/molecule/child_child_doc.adoc'),
+            ]
+        )
+
+        self.assertEqual(
+            createpageMock.mock_calls,
+            [
+                call('parent_article', 'article_id', None),
+                call('formation_guide', 'article_id', 'id_formation'),
+                call('child_child_doc', 'article_id', 'id_molecule')
+            ]
+        )
+
+        # Assert that the homepage is created
+        self.assertEqual(
+            mainpageMock.assert_called_with('tests/data/repository_example'),
+            None,
+        )
+
+    @patch('git2sc.git2sc.Git2SC.create_page', autospect=True)
+    @patch('git2sc.git2sc.Git2SC._process_directory_readme', autospect=True)
+    @patch('git2sc.git2sc.Git2SC._process_mainpage', autospect=True)
+    @patch('git2sc.git2sc.Git2SC.import_file', autospect=True)
+    def test_can_full_upload_directory_hanging_from_parent_article(
+        self,
+        importfileMock,
+        mainpageMock,
+        readmeMock,
+        createpageMock,
+    ):
+        '''Test that we can upload the whole directory but hanging from an
+        confluence article'''
+
+        def create_side_effect(directory_name, parent_id=None):
+            return 'id_{}'.format(os.path.basename(directory_name))
+
+        def import_side_effect(file_name):
+            if 'unknown.file' in file_name:
+                raise UnknownExtension
+            return "article_id"
+
+        excluded_directories = ['.git', '.gitignore', 'excluded_dir']
+        readmeMock.side_effect = create_side_effect
+        importfileMock.side_effect = import_side_effect
+        self.os.walk.side_effect = os.walk
+        self.os.path.basename.side_effect = os.path.basename
+        self.os.path.dirname.side_effect = os.path.dirname
+        self.os.path.join.side_effect = os.path.join
+
+        self.git2sc.directory_full_upload(
+            'tests/data/repository_example',
+            excluded_directories,
+            'initial_parent_id',
+        )
+
+        # Assert that the directories are created
+        self.assertEqual(
+            readmeMock.mock_calls,
+            [
+                call('tests/data/repository_example', 'initial_parent_id'),
+                call(
+                    'tests/data/repository_example/formation',
+                    'id_repository_example'
+                ),
+                call(
+                    'tests/data/repository_example/formation/aws',
+                    'id_formation',
+                ),
+                call(
+                    'tests/data/repository_example/formation/ansible',
+                    'id_formation',
+                ),
+                call(
+                    'tests/data/repository_example/formation/ansible/molecule',
+                    'id_ansible',
+                )
+            ]
+        )
+
+        # Assert that the files are created
+        self.assertEqual(
+            createpageMock.mock_calls,
+            [
+                call('parent_article', 'article_id', 'id_repository_example'),
+                call('formation_guide', 'article_id', 'id_formation'),
+                call('child_child_doc', 'article_id', 'id_molecule')
+            ]
+        )
+
+        # Assert that the homepage is not created
+        self.assertFalse(mainpageMock.called)

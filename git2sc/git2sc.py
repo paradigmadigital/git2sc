@@ -278,10 +278,15 @@ class Git2SC():
 
         is_root_directory = True
         parent_ids = {}
+        parent_ids[path] = parent_id
         for root, directories, files in os.walk(path):
-            if is_root_directory:
+            if is_root_directory and parent_id is None:
                 self._process_mainpage(root)
-                is_root_directory = False
+            elif is_root_directory and parent_id is not None:
+                parent_id = self._process_directory_readme(
+                    root,
+                    parent_id,
+                )
                 parent_ids[root] = parent_id
             else:
                 directory_parent_id = parent_ids[os.path.dirname(root)]
@@ -290,6 +295,7 @@ class Git2SC():
                     directory_parent_id,
                 )
                 parent_ids[root] = parent_id
+            is_root_directory = False
 
             for file in files:
                 filename = '.'.join(os.path.basename(file).split('.')[:-1])
