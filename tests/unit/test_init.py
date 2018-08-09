@@ -224,12 +224,14 @@ class TestMain(unittest.TestCase):
         self.args.subcommand = 'upload'
         self.args.path = '/path/to/directory'
         self.args.exclude = ['.git']
+        self.args.parent_id = None
 
         main()
         self.assertEqual(
             self.git2sc.return_value.directory_full_upload.assert_called_with(
                 self.args.path,
-                self.args.exclude
+                self.args.exclude,
+                None
             ),
             None
         )

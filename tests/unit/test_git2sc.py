@@ -1047,3 +1047,91 @@ class TestGit2SC(unittest.TestCase):
 
         # Assert that the homepage is not created
         self.assertFalse(mainpageMock.called)
+
+    def test_can_get_id_of_article_by_name(self):
+        '''Test we can get the id of an article by the name, we'll use it in
+        the update directory method'''
+
+        self.git2sc.pages = {
+            '371111110': {
+                "id": "371111110",
+                "type": "page",
+                "status": "current",
+                "title": "this is not the article"
+            },
+            '372222220': {
+                "id": "372222220",
+                "type": "page",
+                "status": "current",
+                "title": "article title"
+            },
+        }
+        result = self.git2sc._get_article_id('article title')
+        self.assertEqual(result, '372222220')
+
+    @pytest.mark.skip('Not yet implemented')
+    @patch('git2sc.git2sc.Git2SC.import_file', autospect=True)
+    def test_can_update_a_directory(
+        self,
+        importfileMock,
+        mainpageMock,
+        readmeMock,
+        createpageMock,
+    ):
+        '''Test that we can update a whole directory'''
+
+        # def create_side_effect(directory_name, parent_id=None):
+        #     return 'id_{}'.format(os.path.basename(directory_name))
+        # def import_side_effect(file_name):
+        #     if 'unknown.file' in file_name:
+        #         raise UnknownExtension
+        #     return "article_id"
+        # excluded_directories = ['.git', '.gitignore', 'excluded_dir']
+        # readmeMock.side_effect = create_side_effect
+        # importfileMock.side_effect = import_side_effect
+        # self.os.walk.side_effect = os.walk
+        # self.os.path.basename.side_effect = os.path.basename
+        # self.os.path.dirname.side_effect = os.path.dirname
+        # self.os.path.join.side_effect = os.path.join
+
+        self.git2sc.directory_update(
+            'tests/data/repository_example',
+            excluded_directories,
+        )
+
+        # Assert that the directories are created
+        self.assertEqual(
+            readmeMock.mock_calls,
+            [
+                call('tests/data/repository_example', 'initial_parent_id'),
+                call(
+                    'tests/data/repository_example/formation',
+                    'id_repository_example'
+                ),
+                call(
+                    'tests/data/repository_example/formation/aws',
+                    'id_formation',
+                ),
+                call(
+                    'tests/data/repository_example/formation/ansible',
+                    'id_formation',
+                ),
+                call(
+                    'tests/data/repository_example/formation/ansible/molecule',
+                    'id_ansible',
+                )
+            ]
+        )
+
+        # Assert that the files are created
+        self.assertEqual(
+            createpageMock.mock_calls,
+            [
+                call('parent_article', 'article_id', 'id_repository_example'),
+                call('formation_guide', 'article_id', 'id_formation'),
+                call('child_child_doc', 'article_id', 'id_molecule')
+            ]
+        )
+
+        # Assert that the homepage is not created
+        self.assertFalse(mainpageMock.called)

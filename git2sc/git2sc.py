@@ -64,6 +64,15 @@ class Git2SC():
         for page in r.json()['page']['results']:
             self.pages[page['id']] = page
 
+    def _get_article_id(self, title):
+        '''Get the id of the article with the specified title'''
+
+        return [
+            pageid
+            for pageid, content in self.pages.items()
+            if content['title'] == title
+        ][0]
+
     def _title_exist(self, title):
         '''You can't create more than one article with a specified title, test
         if title exists in the existing pages'''
@@ -154,10 +163,7 @@ class Git2SC():
             headers={'Content-Type': 'application/json'}
         )
 
-        try:
-            self._requests_error(r)
-        except:
-            import pdb; pdb.set_trace()  # XXX BREAKPOINT
+        self._requests_error(r)
 
         pageid = json.loads(r.text)['id']
         self.pages[pageid] = self.get_page_info(pageid)

@@ -74,7 +74,9 @@ git2sc {{ space }} upload {{ directory_path }} --exclude file1 directory1 file2
 ```
 
 If you don't want to upload the directory to the main page but starting from an
-article you can specify it with the `-p` flag
+article you can specify it with the `-p` flag. Beware in this case, the
+confluence page name is the basename of the `directory_path` therefore avoid
+using `.` as `directory_path`.
 
 ```bash
 git2sc {{ space }} upload {{ directory_path }} -p {{ parent_id }}
