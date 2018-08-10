@@ -67,11 +67,15 @@ class Git2SC():
     def _get_article_id(self, title):
         '''Get the id of the article with the specified title'''
 
-        return [
-            pageid
-            for pageid, content in self.pages.items()
-            if content['title'] == title
-        ][0]
+        try:
+            article_id = [
+                pageid
+                for pageid, content in self.pages.items()
+                if content['title'] == title
+            ][0]
+        except IndexError:
+            article_id = None
+        return article_id
 
     def _title_exist(self, title):
         '''You can't create more than one article with a specified title, test
@@ -319,6 +323,82 @@ class Git2SC():
                         html,
                         parent_id,
                     )
+
+            for directory in directories:
+                if directory in excluded_items:
+                    directories.remove(directory)
+
+    def directory_update(
+        self,
+        path,
+        excluded_items,
+        parent_id=None
+    ):
+        '''Takes a path to a directory and crawls all the subdirectories and
+        files and updates them on confluence.
+
+        The uploaded files are the ones supported by the import_file method.
+
+        Optionally you can set up a parent_id to create the confluence structure
+        hanging below a confluence article id.
+
+        Right now it will update or create each article even though it doesn't
+        have any changes.
+        '''
+
+        is_root_directory = True
+        parent_ids = {}
+        parent_ids[path] = parent_id
+        for root, directories, files in os.walk(path):
+            if is_root_directory and parent_id is None:
+                self._process_mainpage(root)
+            elif is_root_directory and parent_id is not None:
+                parent_id = self._process_directory_readme(
+                    root,
+                    parent_id,
+                )
+                parent_ids[root] = parent_id
+            else:
+                article_id = self._get_article_id(os.path.basename(root))
+                directory_parent_id = parent_ids[os.path.dirname(root)]
+                if article_id is None:
+                    self.update_page(
+                        article_id,
+                        self.import_file(root),
+                        self._discover_directory_readme(root),
+                    )
+                else:
+                    article_id = self._process_directory_readme(
+                        root,
+                        directory_parent_id,
+                    )
+                parent_ids[root] = article_id
+            is_root_directory = False
+
+            for file in files:
+                filename = '.'.join(os.path.basename(file).split('.')[:-1])
+
+                try:
+                    html = self.import_file(
+                        os.path.join(root, file)
+                    )
+                except UnknownExtension:
+                    continue
+
+                if not filename == 'README' and file not in excluded_items:
+                    article_id = self._get_article_id(os.path.basename(root))
+                    directory_parent_id = parent_ids[os.path.dirname(root)]
+                    if article_id is None:
+                        self.update_page(
+                            article_id,
+                            html,
+                        )
+                    else:
+                        self.create_page(
+                            filename,
+                            html,
+                            parent_id,
+                        )
 
             for directory in directories:
                 if directory in excluded_items:
