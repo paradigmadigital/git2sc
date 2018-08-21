@@ -1,6 +1,5 @@
 import os
 import json
-import pytest
 import unittest
 from unittest.mock import patch, Mock, call
 from git2sc.git2sc import Git2SC, UnknownExtension
@@ -940,7 +939,12 @@ class TestGit2SC(unittest.TestCase):
                 raise UnknownExtension
             return "article_id"
 
-        excluded_directories = ['.git', '.gitignore', 'excluded_dir']
+        excluded_directories = [
+            '.git',
+            '.gitignore',
+            'excluded_dir',
+            'excluded_file.adoc',
+        ]
         readmeMock.side_effect = create_side_effect
         importfileMock.side_effect = import_side_effect
         self.os.walk.side_effect = os.walk
@@ -970,28 +974,6 @@ class TestGit2SC(unittest.TestCase):
                     'tests/data/repository_example/formation/ansible/molecule',
                     'id_ansible',
                 )
-            ]
-        )
-
-        # Assert that the files are created
-        self.assertEqual(
-            importfileMock.mock_calls,
-            [
-                call('tests/data/repository_example/README.md'),
-                call('tests/data/repository_example/unknown.file'),
-                call('tests/data/repository_example/parent_article.adoc'),
-                call('tests/data/repository_example/.gitignore'),
-                call(
-                    'tests/data/repository_example/formation/'
-                    'formation_guide.adoc'),
-                call('tests/data/repository_example/formation/README.md'),
-                call('tests/data/repository_example/formation/aws/README.md'),
-                call('tests/data/repository_example/formation/'
-                     'ansible/README.md'),
-                call('tests/data/repository_example/formation/'
-                     'ansible/molecule/README.md'),
-                call('tests/data/repository_example/formation/'
-                     'ansible/molecule/child_child_doc.adoc'),
             ]
         )
 
@@ -1032,7 +1014,12 @@ class TestGit2SC(unittest.TestCase):
                 raise UnknownExtension
             return "article_id"
 
-        excluded_directories = ['.git', '.gitignore', 'excluded_dir']
+        excluded_directories = [
+            '.git',
+            '.gitignore',
+            'excluded_dir',
+            'excluded_file.adoc',
+        ]
         readmeMock.side_effect = create_side_effect
         importfileMock.side_effect = import_side_effect
         self.os.walk.side_effect = os.walk
@@ -1124,22 +1111,42 @@ class TestGit2SC(unittest.TestCase):
         result = self.git2sc._get_article_id('Non existing title')
         self.assertEqual(result, None)
 
-    @pytest.mark.skip('not yet')
     @patch('git2sc.git2sc.Git2SC._get_article_id', autospect=True)
     @patch('git2sc.git2sc.Git2SC.create_page', autospect=True)
     @patch('git2sc.git2sc.Git2SC.update_page', autospect=True)
     @patch('git2sc.git2sc.Git2SC.import_file', autospect=True)
+    @patch('git2sc.git2sc.Git2SC._update_directory_readme', autospect=True)
     @patch('git2sc.git2sc.Git2SC._create_directory_readme', autospect=True)
+    @patch('git2sc.git2sc.Git2SC._process_mainpage', autospect=True)
     def test_can_update_a_directory(
         self,
-        readmeMock,
+        process_mainpageMock,
+        createreadmeMock,
+        updatereadmeMock,
         importfileMock,
         updatepageMock,
         createpageMock,
         getarticleidMock,
     ):
         '''Test that we can update a whole directory. For this testcase we'll
-        assume that some directories and files exist'''
+        assume that all the following directories were already uploaded
+
+        ├── formation
+        │   ├── ansible
+        │   │   ├── molecule
+        │   │   │   ├── child_child_doc.adoc
+        │   │   │   └── README.md
+        │   │   └── README.md
+        │   ├── aws
+        │   │   └── README.md
+        │   ├── formation_guide.adoc
+        │   └── README.md
+        ├── parent_article.adoc
+        └── README.md
+
+        Now we don't exclude the excluded_dir so we'll create the readme of that
+        directory and the excluded_file.adoc file
+        '''
 
         def create_side_effect(directory_name, parent_id=None):
             return 'id_{}'.format(os.path.basename(directory_name))
@@ -1147,9 +1154,9 @@ class TestGit2SC(unittest.TestCase):
         def import_side_effect(file_name):
             if 'unknown.file' in file_name:
                 raise UnknownExtension
-            return "article_id"
-        excluded_directories = ['.git', '.gitignore', 'excluded_dir']
-        readmeMock.side_effect = create_side_effect
+            return "{}.html".format(os.path.basename(file_name))
+        excluded_directories = ['.git', '.gitignore']
+        createreadmeMock.side_effect = create_side_effect
         importfileMock.side_effect = import_side_effect
         self.os.walk.side_effect = os.walk
         self.os.path.basename.side_effect = os.path.basename
@@ -1157,8 +1164,8 @@ class TestGit2SC(unittest.TestCase):
         self.os.path.join.side_effect = os.path.join
 
         def get_article_id_side_effect(title):
-            if title == 'formation' or title == 'formation_guide' \
-                    or title == 'molecule':
+            if not title == 'excluded_dir'\
+                    and not title == 'excluded_file':
                 return 'id_{}'.format(title)
             return None
         getarticleidMock.side_effect = get_article_id_side_effect
@@ -1168,19 +1175,33 @@ class TestGit2SC(unittest.TestCase):
             excluded_directories,
         )
 
-        # Assert that the all directories and files are checked
         self.assertEqual(
-            getarticleidMock.mock_calls,
-            [
-                call('id_formation', 'tests/data/repository_example/formation'),
-                call(
-                    'id_formation_guide',
-                    'tests/data/repository_example/formation/'
-                    'formation_guide.adoc',
+            process_mainpageMock.assert_called_with(
+                'tests/data/repository_example'
                 ),
+            None
+        )
+
+        # Assert that the directories are updated
+        self.assertEqual(
+            updatereadmeMock.mock_calls,
+            [
+                call('tests/data/repository_example/formation'),
+                call('tests/data/repository_example/formation/aws'),
+                call('tests/data/repository_example/formation/ansible'),
                 call(
-                    'id_molecule',
                     'tests/data/repository_example/formation/ansible/molecule',
+                ),
+            ]
+        )
+
+        # Assert that new directories are created
+        self.assertEqual(
+            createreadmeMock.mock_calls,
+            [
+                call(
+                    'tests/data/repository_example/formation/excluded_dir',
+                    'id_formation',
                 ),
             ]
         )
@@ -1189,64 +1210,128 @@ class TestGit2SC(unittest.TestCase):
         self.assertEqual(
             updatepageMock.mock_calls,
             [
-                call('id_formation', 'tests/data/repository_example/formation'),
-                call(
-                    'id_formation_guide',
-                    'tests/data/repository_example/formation/'
-                    'formation_guide.adoc',
+                call('id_parent_article', 'parent_article.adoc.html'),
+                call('id_formation_guide', 'formation_guide.adoc.html'),
+                call('id_child_child_doc', 'child_child_doc.adoc.html')
+            ]
+        )
+
+        # Assert that the new files are created
+        self.assertEqual(
+            createpageMock.mock_calls,
+            [call('excluded_file', 'excluded_file.adoc.html', 'id_formation')]
+        )
+
+    import pytest
+
+    @pytest.mark.skip()
+    @patch('git2sc.git2sc.Git2SC._get_article_id', autospect=True)
+    @patch('git2sc.git2sc.Git2SC.create_page', autospect=True)
+    @patch('git2sc.git2sc.Git2SC.update_page', autospect=True)
+    @patch('git2sc.git2sc.Git2SC.import_file', autospect=True)
+    @patch('git2sc.git2sc.Git2SC._update_directory_readme', autospect=True)
+    @patch('git2sc.git2sc.Git2SC._create_directory_readme', autospect=True)
+    @patch('git2sc.git2sc.Git2SC._process_mainpage', autospect=True)
+    def test_can_update_a_directory_with_parent_id(
+        self,
+        process_mainpageMock,
+        createreadmeMock,
+        updatereadmeMock,
+        importfileMock,
+        updatepageMock,
+        createpageMock,
+        getarticleidMock,
+    ):
+        '''Test that we can update a whole directory. For this testcase we'll
+        assume that all the following directories were already uploaded
+
+        ├── formation
+        │   ├── ansible
+        │   │   ├── molecule
+        │   │   │   ├── child_child_doc.adoc
+        │   │   │   └── README.md
+        │   │   └── README.md
+        │   ├── aws
+        │   │   └── README.md
+        │   ├── formation_guide.adoc
+        │   └── README.md
+        ├── parent_article.adoc
+        └── README.md
+
+        Now we don't exclude the excluded_dir so we'll create the readme of that
+        directory and the excluded_file.adoc file
+        '''
+
+        def create_side_effect(directory_name, parent_id=None):
+            return 'id_{}'.format(os.path.basename(directory_name))
+
+        def import_side_effect(file_name):
+            if 'unknown.file' in file_name:
+                raise UnknownExtension
+            return "{}.html".format(os.path.basename(file_name))
+        excluded_directories = ['.git', '.gitignore']
+        createreadmeMock.side_effect = create_side_effect
+        importfileMock.side_effect = import_side_effect
+        self.os.walk.side_effect = os.walk
+        self.os.path.basename.side_effect = os.path.basename
+        self.os.path.dirname.side_effect = os.path.dirname
+        self.os.path.join.side_effect = os.path.join
+
+        def get_article_id_side_effect(title):
+            if not title == 'excluded_dir'\
+                    and not title == 'excluded_file':
+                return 'id_{}'.format(title)
+            return None
+        getarticleidMock.side_effect = get_article_id_side_effect
+
+        self.git2sc.directory_update(
+            'tests/data/repository_example',
+            excluded_directories,
+        )
+
+        self.assertEqual(
+            process_mainpageMock.assert_called_with(
+                'tests/data/repository_example'
                 ),
+            None
+        )
+
+        # Assert that the directories are updated
+        self.assertEqual(
+            updatereadmeMock.mock_calls,
+            [
+                call('tests/data/repository_example/formation'),
+                call('tests/data/repository_example/formation/aws'),
+                call('tests/data/repository_example/formation/ansible'),
                 call(
-                    'id_molecule',
                     'tests/data/repository_example/formation/ansible/molecule',
                 ),
             ]
         )
 
-        # Assert that the directories are created
+        # Assert that new directories are created
         self.assertEqual(
-            readmeMock.mock_calls,
+            createreadmeMock.mock_calls,
             [
                 call(
-                    'tests/data/repository_example/formation/aws',
-                    'id_formation',
-                ),
-                call(
-                    'tests/data/repository_example/formation/ansible',
+                    'tests/data/repository_example/formation/excluded_dir',
                     'id_formation',
                 ),
             ]
         )
 
-        # Assert that the files are created
+        # Assert that the existing articles are updated
         self.assertEqual(
-            importfileMock.mock_calls,
+            updatepageMock.mock_calls,
             [
-                call('tests/data/repository_example/README.md'),
-                call('tests/data/repository_example/unknown.file'),
-                call('tests/data/repository_example/parent_article.adoc'),
-                call('tests/data/repository_example/.gitignore'),
-                call('tests/data/repository_example/formation/README.md'),
-                call('tests/data/repository_example/formation/aws/README.md'),
-                call('tests/data/repository_example/formation/'
-                     'ansible/README.md'),
-                call('tests/data/repository_example/formation/'
-                     'ansible/molecule/README.md'),
-                call('tests/data/repository_example/formation/'
-                     'ansible/molecule/child_child_doc.adoc'),
+                call('id_parent_article', 'parent_article.adoc.html'),
+                call('id_formation_guide', 'formation_guide.adoc.html'),
+                call('id_child_child_doc', 'child_child_doc.adoc.html')
             ]
         )
 
+        # Assert that the new files are created
         self.assertEqual(
             createpageMock.mock_calls,
-            [
-                call('parent_article', 'article_id', None),
-                call('formation_guide', 'article_id', 'id_formation'),
-                call('child_child_doc', 'article_id', 'id_molecule')
-            ]
-        )
-
-        # Assert that the homepage is created
-        self.assertEqual(
-            mainpageMock.assert_called_with('tests/data/repository_example'),
-            None,
+            [call('excluded_file', 'excluded_file.adoc.html', 'id_formation')]
         )

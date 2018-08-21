@@ -96,5 +96,26 @@ def load_parser():
         default=None,
         help="Parent id of the article to create",
     )
+    sync_parser = subcommand_parser.add_parser('sync')
+    sync_parser.add_argument(
+        "path",
+        type=str,
+        help='Path to directory',
+    )
+
+    sync_parser.add_argument(
+        "--exclude",
+        nargs='*',
+        default=['.git', '.gitignore', '.gitmodules'],
+        help="List of directories to exclude",
+    )
+    sync_parser.add_argument(
+        "-p",
+        "--parent_id",
+        type=str,
+        nargs='?',
+        default=None,
+        help="Parent id of the article to create",
+    )
     argcomplete.autocomplete(parser)
     return parser

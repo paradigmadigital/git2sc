@@ -262,7 +262,6 @@ class Git2SC():
             self._discover_directory_readme(directory_path),
         )
 
-
     def import_file(self, file_path):
         '''Takes a path to a file and decides which _process.* method to use
         based on the extension'''
@@ -361,28 +360,23 @@ class Git2SC():
         for root, directories, files in os.walk(path):
             if is_root_directory and parent_id is None:
                 self._process_mainpage(root)
-            elif is_root_directory and parent_id is not None:
-                parent_id = self._create_directory_readme(
-                    root,
-                    parent_id,
-                )
-                parent_ids[root] = parent_id
+            # elif is_root_directory and parent_id is not None:
+            #     parent_id = self._update_directory_readme(
+            #         root,
+            #         parent_id,
+            #     )
+            #     parent_ids[root] = parent_id
             else:
                 article_id = self._get_article_id(os.path.basename(root))
                 directory_parent_id = parent_ids[os.path.dirname(root)]
-                if article_id is None:
-                    self.update_page(
-                        article_id,
-                        self.import_file(root),
-                        self._discover_directory_readme(root),
-                    )
+                if article_id is not None:
+                    self._update_directory_readme(root)
                 else:
                     article_id = self._create_directory_readme(
                         root,
                         directory_parent_id,
                     )
                 parent_ids[root] = article_id
-            is_root_directory = False
 
             for file in files:
                 filename = '.'.join(os.path.basename(file).split('.')[:-1])
@@ -395,9 +389,11 @@ class Git2SC():
                     continue
 
                 if not filename == 'README' and file not in excluded_items:
-                    article_id = self._get_article_id(os.path.basename(root))
-                    directory_parent_id = parent_ids[os.path.dirname(root)]
-                    if article_id is None:
+                    article_id = self._get_article_id(filename)
+
+                    directory_parent_id = parent_ids[root]
+
+                    if article_id is not None:
                         self.update_page(
                             article_id,
                             html,
@@ -406,12 +402,14 @@ class Git2SC():
                         self.create_page(
                             filename,
                             html,
-                            parent_id,
+                            directory_parent_id,
                         )
 
             for directory in directories:
                 if directory in excluded_items:
                     directories.remove(directory)
+
+            is_root_directory = False
 
 
 class UnknownExtension(Exception):

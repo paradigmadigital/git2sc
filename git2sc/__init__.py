@@ -53,6 +53,8 @@ def main():
 
     elif args.subcommand == 'upload':
         g.directory_full_upload(args.path, args.exclude, args.parent_id)
+    elif args.subcommand == 'sync':
+        g.directory_update(args.path, args.exclude, args.parent_id)
 
 
 if __name__ == "__main__":
