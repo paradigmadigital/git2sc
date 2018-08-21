@@ -20,6 +20,13 @@ Set up the credentials in the environment variables:
 
 # Usage
 
+All commands require that you specify the `space` id of your project. To obtain
+this value you have to go to your confluence page which may look like this
+
+`https://company.atlassian.net/wiki/spaces/SPACE/overview`
+
+Where `SPACE` is the space id.
+
 ## Update an article
 
 This command will update the confluence article with id `{{ article_id }}` with
