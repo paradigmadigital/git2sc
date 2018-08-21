@@ -140,6 +140,27 @@ class TestGit2SC(unittest.TestCase):
         self.assertTrue(self.requests_error.called)
         self.assertEqual(self.git2sc.pages, desired_pages)
 
+    def test_can_detect_if_title_exist_in_pages(self):
+        '''You can't create more than one article with a specified title, test
+        if title exists in the existing pages. test that it detects one'''
+
+        self.git2sc.pages = {
+            '371111110': {
+                "id": "371111110",
+                "type": "page",
+                "status": "current",
+                "title": "Article1",
+            },
+            '372222220': {
+                "id": "372222220",
+                "type": "page",
+                "status": "current",
+                "title": "Article2",
+            },
+        }
+        self.assertTrue(self.git2sc._title_exist('Article1'))
+        self.assertFalse(self.git2sc._title_exist('Article3'))
+
     def test_can_update_articles(self):
         '''Required to ensure that the update_page method posts to the
         correct api endpoint with the correct data structure '''
@@ -535,3 +556,44 @@ class TestGit2SC_requests_error(unittest.TestCase):
         })
         self.git2sc._requests_error(self.requests_object)
         self.assertFalse(self.print.called)
+
+    def test_can_get_id_of_article_by_name(self):
+        '''Test we can get the id of an article by the name, we'll use it in
+        the update directory method'''
+
+        self.git2sc.pages = {
+            '371111110': {
+                "id": "371111110",
+                "type": "page",
+                "status": "current",
+                "title": "this is not the article"
+            },
+            '372222220': {
+                "id": "372222220",
+                "type": "page",
+                "status": "current",
+                "title": "article title"
+            },
+        }
+        result = self.git2sc._get_article_id('article title')
+        self.assertEqual(result, '372222220')
+
+    def test_get_article_id_returns_none_if_not_exists(self):
+        '''Test get_article_id returns None if no one exist'''
+
+        self.git2sc.pages = {
+            '371111110': {
+                "id": "371111110",
+                "type": "page",
+                "status": "current",
+                "title": "this is not the article"
+            },
+            '372222220': {
+                "id": "372222220",
+                "type": "page",
+                "status": "current",
+                "title": "article title"
+            },
+        }
+        result = self.git2sc._get_article_id('Non existing title')
+        self.assertEqual(result, None)

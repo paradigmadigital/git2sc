@@ -63,6 +63,25 @@ class Git2SC():
         for page in r.json()['results']:
             self.pages[page['id']] = page
 
+    def _get_article_id(self, title):
+        '''Get the id of the article with the specified title'''
+
+        try:
+            article_id = [
+                pageid
+                for pageid, content in self.pages.items()
+                if content['title'] == title
+            ][0]
+        except IndexError:
+            article_id = None
+        return article_id
+
+    def _title_exist(self, title):
+        '''You can't create more than one article with a specified title, test
+        if title exists in the existing pages'''
+        titles = [content['title'] for page, content in self.pages.items()]
+        return title in titles
+
     def update_page(self, pageid, html, title=None):
         '''Update a confluence page with the content of the html variable'''
 
