@@ -773,7 +773,7 @@ class TestGit2SC(unittest.TestCase):
         self.os.path.join.side_effect = os.path.join
         self.os.path.basename.side_effect = os.path.basename
 
-        result = self.git2sc._process_directory_readme(directory_path)
+        result = self.git2sc._create_directory_readme(directory_path)
 
         self.assertEqual(
             discoverreadmeMock.assert_called_with(
@@ -792,6 +792,41 @@ class TestGit2SC(unittest.TestCase):
         self.assertEqual(
             result,
             createpageMock.return_value,
+        )
+
+    @patch('git2sc.git2sc.Git2SC.update_page', autospect=True)
+    @patch('git2sc.git2sc.Git2SC._get_article_id', autospect=True)
+    @patch('git2sc.git2sc.Git2SC._discover_directory_readme', autospect=True)
+    def test_can_update_the_directory_readme(
+        self,
+        discoverreadmeMock,
+        getarticleMock,
+        updatepageMock,
+    ):
+        '''Given a directory path test that git2sc updates a page with the
+        contents of README being the title the name of the directory'''
+
+        directory_path = '/path/to/directory'
+        self.os.path.join.side_effect = os.path.join
+        self.os.path.basename.side_effect = os.path.basename
+        getarticleMock.return_value = '412254212'
+
+        self.git2sc._update_directory_readme(directory_path)
+
+        self.assertEqual(getarticleMock.assert_called_with('directory'), None)
+
+        self.assertEqual(
+            discoverreadmeMock.assert_called_with(
+                '/path/to/directory',
+            ),
+            None,
+        )
+        self.assertEqual(
+            updatepageMock.assert_called_with(
+                '412254212',
+                discoverreadmeMock.return_value,
+            ),
+            None
         )
 
     @patch('git2sc.git2sc.Git2SC.create_page', autospect=True)
@@ -817,7 +852,7 @@ class TestGit2SC(unittest.TestCase):
 
         self.os.path.isfile.side_effect = true_if_md
 
-        self.git2sc._process_directory_readme(directory_path, parent_id)
+        self.git2sc._create_directory_readme(directory_path, parent_id)
 
         self.assertEqual(
             createpageMock.assert_called_with(
@@ -862,7 +897,7 @@ class TestGit2SC(unittest.TestCase):
         self.requests_error_patch.start()
 
     @patch('git2sc.git2sc.Git2SC.create_page', autospect=True)
-    @patch('git2sc.git2sc.Git2SC._process_directory_readme', autospect=True)
+    @patch('git2sc.git2sc.Git2SC._create_directory_readme', autospect=True)
     @patch('git2sc.git2sc.Git2SC._process_mainpage', autospect=True)
     @patch('git2sc.git2sc.Git2SC.import_file', autospect=True)
     def test_can_full_upload_directory(
@@ -976,7 +1011,7 @@ class TestGit2SC(unittest.TestCase):
         )
 
     @patch('git2sc.git2sc.Git2SC.create_page', autospect=True)
-    @patch('git2sc.git2sc.Git2SC._process_directory_readme', autospect=True)
+    @patch('git2sc.git2sc.Git2SC._create_directory_readme', autospect=True)
     @patch('git2sc.git2sc.Git2SC._process_mainpage', autospect=True)
     @patch('git2sc.git2sc.Git2SC.import_file', autospect=True)
     def test_can_full_upload_directory_hanging_from_parent_article(
@@ -1089,11 +1124,12 @@ class TestGit2SC(unittest.TestCase):
         result = self.git2sc._get_article_id('Non existing title')
         self.assertEqual(result, None)
 
+    @pytest.mark.skip('not yet')
     @patch('git2sc.git2sc.Git2SC._get_article_id', autospect=True)
     @patch('git2sc.git2sc.Git2SC.create_page', autospect=True)
     @patch('git2sc.git2sc.Git2SC.update_page', autospect=True)
     @patch('git2sc.git2sc.Git2SC.import_file', autospect=True)
-    @patch('git2sc.git2sc.Git2SC._process_directory_readme', autospect=True)
+    @patch('git2sc.git2sc.Git2SC._create_directory_readme', autospect=True)
     def test_can_update_a_directory(
         self,
         readmeMock,

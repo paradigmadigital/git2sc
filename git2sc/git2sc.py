@@ -245,7 +245,7 @@ class Git2SC():
 
         return self.import_file(readme_file)
 
-    def _process_directory_readme(self, directory_path, parent_id=None):
+    def _create_directory_readme(self, directory_path, parent_id=None):
         '''Takes a directory path, searches for README.adoc or README.md and
         creates a confluence page with that information'''
         return self.create_page(
@@ -253,6 +253,15 @@ class Git2SC():
             self._discover_directory_readme(directory_path),
             parent_id,
         )
+
+    def _update_directory_readme(self, directory_path):
+        '''Takes a directory path, deduces the article_id and updates it with
+        the contents of the README.adoc or README.md'''
+        self.update_page(
+            self._get_article_id(os.path.basename(directory_path)),
+            self._discover_directory_readme(directory_path),
+        )
+
 
     def import_file(self, file_path):
         '''Takes a path to a file and decides which _process.* method to use
@@ -293,14 +302,14 @@ class Git2SC():
             if is_root_directory and parent_id is None:
                 self._process_mainpage(root)
             elif is_root_directory and parent_id is not None:
-                parent_id = self._process_directory_readme(
+                parent_id = self._create_directory_readme(
                     root,
                     parent_id,
                 )
                 parent_ids[root] = parent_id
             else:
                 directory_parent_id = parent_ids[os.path.dirname(root)]
-                parent_id = self._process_directory_readme(
+                parent_id = self._create_directory_readme(
                     root,
                     directory_parent_id,
                 )
@@ -353,7 +362,7 @@ class Git2SC():
             if is_root_directory and parent_id is None:
                 self._process_mainpage(root)
             elif is_root_directory and parent_id is not None:
-                parent_id = self._process_directory_readme(
+                parent_id = self._create_directory_readme(
                     root,
                     parent_id,
                 )
@@ -368,7 +377,7 @@ class Git2SC():
                         self._discover_directory_readme(root),
                     )
                 else:
-                    article_id = self._process_directory_readme(
+                    article_id = self._create_directory_readme(
                         root,
                         directory_parent_id,
                     )
