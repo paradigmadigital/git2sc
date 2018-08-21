@@ -26,7 +26,7 @@ This command will update the confluence article with id `{{ article_id }}` with
 the content of the file in the path `{{ content }}`.
 
 ```bash
-git2sc article update {{ article_id }} {{ content }}
+git2sc {{ space }} article update {{ article_id }} {{ content }}
 ```
 
 ## Create an article
@@ -36,14 +36,14 @@ with title `{{ title }}` and with the content of the file in the path `{{
 content }}`.
 
 ```bash
-git2sc article create {{ space }} {{ title }} {{ content }}
+git2sc {{ space }} article create {{ title }} {{ content }}
 ```
 
 If you want to make the article a children of another article use the `-p {{
 parent_id }}` flag
 
 ```bash
-git2sc article create -p {{ parent_id }} {{ space }} {{ title }} {{ content }}
+git2sc {{ space }} article create -p {{ parent_id }} {{ title }} {{ content }}
 ```
 
 ## Delete an article
@@ -51,7 +51,7 @@ git2sc article create -p {{ parent_id }} {{ space }} {{ title }} {{ content }}
 This command will delete the confluence article with id `{{ article_id }}`.
 
 ```bash
-git2sc article delete {{ article_id }}
+git2sc {{ space }} article delete {{ article_id }}
 ```
 
 # Test
