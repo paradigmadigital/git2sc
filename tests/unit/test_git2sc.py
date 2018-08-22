@@ -1222,6 +1222,9 @@ class TestGit2SC(unittest.TestCase):
             [call('excluded_file', 'excluded_file.adoc.html', 'id_formation')]
         )
 
+        # Assert that the deleted files are deleted
+        self.assertTrue(False)
+
     import pytest
 
     @pytest.mark.skip()
