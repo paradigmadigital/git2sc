@@ -10,7 +10,14 @@ class TestArgparse(unittest.TestCase):
         '''Required to ensure that the parser is correctly configured to
         update an article as expected'''
         parsed = self.parser.parse_args(
-            ['article', 'update', '--html', '1', '<p>Updated article</p>']
+            [
+                'TST',
+                'article',
+                'update',
+                '--html',
+                '1',
+                '<p>Updated article</p>'
+            ]
         )
         self.assertEqual(parsed.subcommand, 'article')
         self.assertEqual(parsed.article_command, 'update')
@@ -24,10 +31,10 @@ class TestArgparse(unittest.TestCase):
 
         parsed = self.parser.parse_args(
             [
+                'TST',
                 'article',
                 'create',
                 '--html',
-                'TST',
                 'new article',
                 '<p>New article!</p>',
             ]
@@ -46,12 +53,12 @@ class TestArgparse(unittest.TestCase):
 
         parsed = self.parser.parse_args(
             [
+                'TST',
                 'article',
                 'create',
                 '--html',
                 '-p',
                 '1111',
-                'TST',
                 'new article',
                 '<p>New article!</p>',
             ]
@@ -70,9 +77,9 @@ class TestArgparse(unittest.TestCase):
 
         parsed = self.parser.parse_args(
             [
+                'TST',
                 'article',
                 'create',
-                'TST',
                 'new article',
                 '/path/to/article',
             ]
@@ -89,8 +96,9 @@ class TestArgparse(unittest.TestCase):
         update an article as expected'''
 
         parsed = self.parser.parse_args(
-            ['article', 'delete', '1']
+            ['TST', 'article', 'delete', '1']
         )
         self.assertEqual(parsed.subcommand, 'article')
         self.assertEqual(parsed.article_command, 'delete')
+        self.assertEqual(parsed.space, 'TST')
         self.assertEqual(parsed.article_id, '1')

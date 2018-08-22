@@ -14,6 +14,7 @@ class Git2SC():
         self.auth = tuple(auth.split(':'))
         self.space = space_id
         self.pages = {}
+        self.get_space_articles()
 
     def _requests_error(self, requests_object):
         '''Print the confluence error'''
@@ -52,15 +53,15 @@ class Git2SC():
     def get_space_articles(self):
         '''Get all the pages of a confluence space'''
 
-        url = '{base}/content/?spaceKey={spaceid}'\
-            '?expand=ancestors,body.storage,version'.format(
+        url = '{base}/space/{spaceid}/'\
+            'content?expand=body.storage&limit=5000&start=0'.format(
                 base=self.api_url,
                 spaceid=self.space,
             )
         r = requests.get(url, auth=self.auth)
         self._requests_error(r)
         self.pages = {}
-        for page in r.json()['results']:
+        for page in r.json()['page']['results']:
             self.pages[page['id']] = page
 
     def _get_article_id(self, title):

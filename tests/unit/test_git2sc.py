@@ -13,7 +13,6 @@ class TestGit2SC(unittest.TestCase):
         self.auth_string = 'user:password'
         self.auth = tuple(self.auth_string.split(':'))
         self.space = 'TST'
-        self.git2sc = Git2SC(self.api_url, self.auth_string, self.space)
 
         self.requests_patch = patch('git2sc.git2sc.requests')
         self.requests = self.requests_patch.start()
@@ -28,11 +27,19 @@ class TestGit2SC(unittest.TestCase):
         self.os_patch = patch('git2sc.git2sc.os', autospect=True)
         self.os = self.os_patch.start()
 
+        self.getspacearticles_patch = patch(
+            'git2sc.git2sc.Git2SC.get_space_articles',
+            autospect=True,
+        )
+        self.getspacearticles = self.getspacearticles_patch.start()
+        self.git2sc = Git2SC(self.api_url, self.auth_string, self.space)
+
     def tearDown(self):
         self.requests_patch.stop()
         self.requests_error_patch.stop()
         self.json_patch.stop()
         self.os_patch.stop()
+        self.getspacearticles_patch.stop()
 
     def test_has_auth_set(self):
         'Required attribute for some methods'
@@ -53,6 +60,12 @@ class TestGit2SC(unittest.TestCase):
         'Required attribute for some methods'
 
         self.assertEqual(self.git2sc.api_url, self.api_url)
+
+    def test_get_space_articles_called_on_init(self):
+        '''Required to test that get_space_articles get called on init, this
+        is a requirement for create_page, update_page and other methods '''
+
+        self.assertTrue(self.getspacearticles.called)
 
     def test_can_get_page_info(self):
         '''Required to ensure that the get_page_info method calls the correct
@@ -99,19 +112,22 @@ class TestGit2SC(unittest.TestCase):
         correct api endpoint and returns a dictionary with the desired
         pages as a dictionary of dictionaries'''
 
+        self.getspacearticles_patch.stop()
         self.requests.get.return_value.json.return_value = {
-            "results": [
-                {
-                    "id": "371111110",
-                    "type": "page",
-                    "status": "current",
-                },
-                {
-                    "id": "372222220",
-                    "type": "page",
-                    "status": "current",
-                },
-            ]
+            "page": {
+                "results": [
+                    {
+                        "id": "371111110",
+                        "type": "page",
+                        "status": "current",
+                    },
+                    {
+                        "id": "372222220",
+                        "type": "page",
+                        "status": "current",
+                    },
+                ]
+            }
         }
         desired_pages = {
             '371111110': {
@@ -128,8 +144,8 @@ class TestGit2SC(unittest.TestCase):
         self.git2sc.get_space_articles()
         self.assertEqual(
             self.requests.get.assert_called_with(
-                '{}/content/?spaceKey={}?expand='
-                'ancestors,body.storage,version'.format(
+                '{}/space/{}/content'
+                '?expand=body.storage&limit=5000&start=0'.format(
                     self.api_url,
                     self.space,
                 ),
@@ -139,6 +155,7 @@ class TestGit2SC(unittest.TestCase):
         )
         self.assertTrue(self.requests_error.called)
         self.assertEqual(self.git2sc.pages, desired_pages)
+        self.getspacearticles_patch.start()
 
     def test_can_detect_if_title_exist_in_pages(self):
         '''You can't create more than one article with a specified title, test
@@ -517,15 +534,22 @@ class TestGit2SC_requests_error(unittest.TestCase):
         self.auth_string = 'user:password'
         self.auth = tuple(self.auth_string.split(':'))
         self.space = 'TST'
-        self.git2sc = Git2SC(self.api_url, self.auth_string, self.space)
 
         self.requests_object = Mock()
 
         self.print_patch = patch('git2sc.git2sc.print')
         self.print = self.print_patch.start()
 
+        self.getspacearticles_patch = patch(
+            'git2sc.git2sc.Git2SC.get_space_articles',
+            autospect=True,
+        )
+        self.getspacearticles = self.getspacearticles_patch.start()
+        self.git2sc = Git2SC(self.api_url, self.auth_string, self.space)
+
     def tearDown(self):
         self.print.stop()
+        self.getspacearticles_patch.stop()
 
     def test_request_error_display_message_if_rc_not_200(self):
         '''Required to ensure that the _requests_error method returns the
