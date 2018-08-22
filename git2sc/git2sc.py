@@ -226,9 +226,10 @@ class Git2SC():
 
     def _process_mainpage(self, directory_path):
         '''Takes a path to a file and updates the confluence homepage'''
-        homepage = self.get_space_homepage()
+        homepage_id = self.get_space_homepage()
         html = self._discover_directory_readme(directory_path)
-        self.update_page(homepage, html)
+        self.update_page(homepage_id, html)
+        return homepage_id
 
     def _discover_directory_readme(self, directory_path, parent_id=None):
         '''Takes a directory path, searches for README.adoc or README.md and
@@ -356,10 +357,11 @@ class Git2SC():
 
         is_root_directory = True
         parent_ids = {}
+        processed_articles_ids = []
         parent_ids[path] = parent_id
         for root, directories, files in os.walk(path):
             if is_root_directory and parent_id is None:
-                self._process_mainpage(root)
+                article_id = self._process_mainpage(root)
             # elif is_root_directory and parent_id is not None:
             #     parent_id = self._update_directory_readme(
             #         root,
@@ -377,6 +379,7 @@ class Git2SC():
                         directory_parent_id,
                     )
                 parent_ids[root] = article_id
+            processed_articles_ids.append(article_id)
 
             for file in files:
                 filename = '.'.join(os.path.basename(file).split('.')[:-1])
@@ -391,6 +394,8 @@ class Git2SC():
                 if not filename == 'README' and file not in excluded_items:
                     article_id = self._get_article_id(filename)
 
+                    if article_id in processed_articles_ids:
+                        continue
                     directory_parent_id = parent_ids[root]
 
                     if article_id is not None:
@@ -399,17 +404,22 @@ class Git2SC():
                             html,
                         )
                     else:
-                        self.create_page(
+                        article_id = self.create_page(
                             filename,
                             html,
                             directory_parent_id,
                         )
+                    processed_articles_ids.append(article_id)
 
             for directory in directories:
                 if directory in excluded_items:
                     directories.remove(directory)
 
             is_root_directory = False
+
+        for page_id in self.pages.keys():
+            if page_id not in processed_articles_ids:
+                self.delete_page(page_id)
 
 
 class UnknownExtension(Exception):

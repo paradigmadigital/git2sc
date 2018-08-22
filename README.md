@@ -69,6 +69,13 @@ confluence creating a hierarchy of articles equally to the directory tree.
 For each directory it will try to load the `README.adoc` or `README.md` to the
 directory confluence page.
 
+Even if confluence uses page_ids there can't be two articles with the same
+title, so if you have two files with the same name it will create it with
+name_1, name_2, and so on. Check
+[this](https://git.paradigmadigital.com/seguridad/git2sc/issues/4) issue to view
+the improvements. Try to avoid having files with the same name on your repo for
+flawless results.
+
 ```bash
 git2sc {{ space }} upload {{ directory_path }}
 ```
@@ -87,6 +94,41 @@ using `.` as `directory_path`.
 
 ```bash
 git2sc {{ space }} upload {{ directory_path }} -p {{ parent_id }}
+```
+
+## Sync a directory
+
+This command will sync all the contents of a directory to the main page of
+confluence creating a hierarchy of articles equally to the directory tree.
+
+For each directory it will try to load the `README.adoc` or `README.md` to the
+directory confluence page.
+
+Even if confluence uses page_ids there can't be two articles with the same
+title, so if you have two files with the same name, the upload directory command
+will create it with name_1, name_2, and so on. Check
+[this](https://git.paradigmadigital.com/seguridad/git2sc/issues/4) issue to view
+the improvements. But **the sync command won't update the files with `*_1`,
+`*_2`, ... So try to avoid having files with the same names on your directory**.
+
+```bash
+git2sc {{ space }} sync {{ directory_path }}
+```
+
+Optionally you can exclude some files and directories (by default `.git`,
+`.gitignore`, and `.gitmodules`)
+
+```bash
+git2sc {{ space }} sync {{ directory_path }} --exclude file1 directory1 file2
+```
+
+If you don't want to upload the directory to the main page but starting from an
+article you can specify it with the `-p` flag. Beware in this case, the
+confluence page name is the basename of the `directory_path` therefore avoid
+using `.` as `directory_path`.
+
+```bash
+git2sc {{ space }} sync {{ directory_path }} -p {{ parent_id }}
 ```
 
 # Test
