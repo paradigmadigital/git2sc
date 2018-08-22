@@ -23,6 +23,7 @@ class TestMain(unittest.TestCase):
         self.print_patch = patch('git2sc.print')
         self.print = self.print_patch.start()
 
+        self.args.space = 'TST'
         self.git2sc_patch = patch('git2sc.Git2SC', autospect=True)
         self.git2sc = self.git2sc_patch.start()
 
@@ -89,6 +90,7 @@ class TestMain(unittest.TestCase):
             self.git2sc.assert_called_with(
                 'https://confluence.sucks.com/wiki/rest/api',
                 'user:password',
+                'TST',
             ),
             None,
         )
@@ -117,7 +119,6 @@ class TestMain(unittest.TestCase):
         self.args.subcommand = 'article'
         self.args.article_command = 'create'
         self.args.title = 'new article'
-        self.args.space = 'TST'
         self.args.content = '<p>New article!</p>'
         self.args.parent_id = None
         self.args.html = True
@@ -125,7 +126,6 @@ class TestMain(unittest.TestCase):
         main()
         self.assertEqual(
             self.git2sc.return_value.create_page.assert_called_with(
-                self.args.space,
                 self.args.title,
                 self.args.content,
                 self.args.parent_id,
@@ -138,14 +138,12 @@ class TestMain(unittest.TestCase):
         self.args.article_command = 'create'
         self.args.title = 'new article'
         self.args.parent_id = '1111'
-        self.args.space = 'TST'
         self.args.content = '<p>New article!</p>'
         self.args.html = True
 
         main()
         self.assertEqual(
             self.git2sc.return_value.create_page.assert_called_with(
-                self.args.space,
                 self.args.title,
                 self.args.content,
                 self.args.parent_id,
@@ -183,7 +181,6 @@ class TestMain(unittest.TestCase):
         self.args.subcommand = 'article'
         self.args.article_command = 'create'
         self.args.title = 'new article'
-        self.args.space = 'TST'
         self.args.content = '/path/to/file'
         self.args.parent_id = None
         self.args.html = False
@@ -197,7 +194,6 @@ class TestMain(unittest.TestCase):
         )
         self.assertEqual(
             self.git2sc.return_value.create_page.assert_called_with(
-                self.args.space,
                 self.args.title,
                 self.git2sc.return_value.import_file.return_value,
                 self.args.parent_id,
