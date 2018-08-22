@@ -1,4 +1,10 @@
 
+0.6.1 / 2018-08-21
+==================
+
+  * Added where to get the space id
+  * Update cli and init after space refactor
+
 0.6.0 / 2018-08-07
 ==================
 

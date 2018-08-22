@@ -36,7 +36,7 @@ def main():
         print('GIT2SC_AUTH environmental variable not set')
         return
 
-    g = Git2SC(api_url, auth)
+    g = Git2SC(api_url, auth, args.space)
 
     if args.subcommand == 'article':
         if args.article_command == 'delete':
@@ -49,7 +49,7 @@ def main():
             if args.article_command == 'update':
                 g.update_page(args.article_id, html)
             elif args.article_command == 'create':
-                g.create_page(args.space, args.title, html, args.parent_id)
+                g.create_page(args.title, html, args.parent_id)
 
 
 if __name__ == "__main__":
