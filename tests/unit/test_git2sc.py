@@ -149,10 +149,11 @@ class TestGit2SC(unittest.TestCase):
         self.git2sc.get_space_articles()
         self.assertEqual(
             self.requests.get.assert_called_with(
-                '{}/space/{}/content'.format(
+                '{}/space/{}/content'
+                '?expand=body.storage&limit=5000&start=0'.format(
                     self.api_url,
                     self.space,
-                ) + '?expand=body.storage&limit=5000&start=0',
+                ),
                 auth=self.auth
             ),
             None,

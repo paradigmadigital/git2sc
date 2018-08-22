@@ -53,11 +53,11 @@ class Git2SC():
     def get_space_articles(self):
         '''Get all the pages of a confluence space'''
 
-        url = '{base}/space/{spaceid}/'.format(
+        url = '{base}/space/{spaceid}/'\
+            'content?expand=body.storage&limit=5000&start=0'.format(
                 base=self.api_url,
                 spaceid=self.space,
-            ) + 'content?expand=body.storage&limit=5000&start=0'
-
+            )
         r = requests.get(url, auth=self.auth)
         self._requests_error(r)
         self.pages = {}
