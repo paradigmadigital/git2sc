@@ -1,4 +1,9 @@
 
+0.6.2 / 2018-08-21
+==================
+
+  * Load space articles when the object is initiated
+
 0.6.1 / 2018-08-21
 ==================
 
