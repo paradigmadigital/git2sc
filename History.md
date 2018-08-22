@@ -1,4 +1,9 @@
 
+0.7.0 / 2018-08-21
+==================
+
+  * Added methods to check if article already exist
+
 0.6.2 / 2018-08-21
 ==================
 
