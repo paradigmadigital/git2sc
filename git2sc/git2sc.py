@@ -24,9 +24,9 @@ class Git2SC():
         else:
             response = json.loads(requests_object.text)
 
-            print('Error {}: {}'.format(
+            raise Exception('Error {}: {}'.format(
                 response['statusCode'],
-                response['message'],
+                response['message']
             ))
 
     def get_page_info(self, pageid):
@@ -133,9 +133,15 @@ class Git2SC():
     def create_page(self, title, html, parent_id=None):
         '''Create a confluence page with the content of the html variable'''
 
+        new_title = title
+        for counter in range(1, 10):
+            if not self._title_exist(new_title):
+                break
+            new_title = '{}_{}'.format(title, counter)
+
         data = {
             'type': 'page',
-            'title': title,
+            'title': new_title,
             'space': {'key': self.space},
             'body': {
                 'storage': {
@@ -160,6 +166,10 @@ class Git2SC():
         )
 
         self._requests_error(r)
+
+        pageid = json.loads(r.text)['id']
+        self.pages[pageid] = self.get_page_info(pageid)
+        return pageid
 
     def delete_page(self, pageid):
         '''Delete a confluence page given the pageid'''
@@ -198,11 +208,11 @@ class Git2SC():
             shell=False,
         ).decode().replace('<!DOCTYPE html>\n', '')
 
-    def _process_md(self, adoc_file_path):
+    def _process_md(self, md_file_path):
         '''Takes a path to an md file, transform it and return it as
         html'''
 
-        clean_path = self._safe_load_file(adoc_file_path)
+        clean_path = self._safe_load_file(md_file_path)
 
         return pypandoc.convert_file(clean_path, 'html')
 

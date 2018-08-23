@@ -27,6 +27,9 @@ class TestGit2SC(unittest.TestCase):
         self.os_patch = patch('git2sc.git2sc.os', autospect=True)
         self.os = self.os_patch.start()
 
+        self.print_patch = patch('git2sc.git2sc.print', autospect=True)
+        self.print = self.print_patch.start()
+
         self.getspacearticles_patch = patch(
             'git2sc.git2sc.Git2SC.get_space_articles',
             autospect=True,
@@ -316,7 +319,8 @@ class TestGit2SC(unittest.TestCase):
         self.git2sc.update_page(page_id, html, 'new title')
         self.assertEqual(self.git2sc.pages[page_id]['title'], 'new title')
 
-    def test_can_create_articles_as_parent(self):
+    @patch('git2sc.git2sc.Git2SC.get_page_info', autospect=True)
+    def test_can_create_articles_as_parent(self, getPageInfoMock):
         '''Required to ensure that the create_page method posts to the
         correct api endpoint with the correct data structure if no
         inheritance is set'''
@@ -335,9 +339,14 @@ class TestGit2SC(unittest.TestCase):
             },
         }
         requests_data_json = json.dumps(requests_data)
-        self.json.dumps.return_value = requests_data_json
+        self.json.dumps.side_effect = json.dumps
 
-        self.git2sc.create_page('new title', html)
+        response_data = {'id': '412254212', 'type': 'page'}
+        response_data_json = json.dumps(response_data)
+        self.requests.post.return_value.text = response_data_json
+        self.json.loads.return_value = response_data
+
+        page_id = self.git2sc.create_page('new title', html)
 
         self.assertEqual(
             self.json.dumps.assert_called_with(requests_data),
@@ -353,6 +362,15 @@ class TestGit2SC(unittest.TestCase):
             None,
         )
         self.assertTrue(self.requests_error.called)
+        self.assertEqual(
+            self.json.loads.assert_called_with(response_data_json),
+            None,
+        )
+        self.assertEqual(
+            getPageInfoMock.assert_called_with(page_id),
+            None,
+        )
+        self.assertEqual(page_id, '412254212')
 
     def test_can_create_articles_as_a_child(self):
         '''Required to ensure that the create_page method posts to the
@@ -377,7 +395,12 @@ class TestGit2SC(unittest.TestCase):
         requests_data_json = json.dumps(requests_data)
         self.json.dumps.return_value = requests_data_json
 
-        self.git2sc.create_page('new title', html, parent_id)
+        response_data = {'id': '412254212', 'type': 'page'}
+        response_data_json = json.dumps(response_data)
+        self.requests.post.return_value.text = response_data_json
+        self.json.loads.return_value = response_data
+
+        page_id = self.git2sc.create_page('new title', html, parent_id)
 
         self.assertEqual(
             self.json.dumps.assert_called_with(requests_data),
@@ -393,8 +416,47 @@ class TestGit2SC(unittest.TestCase):
             None,
         )
         self.assertTrue(self.requests_error.called)
+        self.assertEqual(
+            self.json.loads.assert_called_with(response_data_json),
+            None,
+        )
+        self.assertEqual(page_id, '412254212')
 
-    @patch('git2sc.git2sc.shlex')
+    @patch('git2sc.git2sc.Git2SC._title_exist', autospect=True)
+    def test_can_create_articles_when_name_exists(self, titleexistMock):
+        '''In Confluence even though they use an article_id, you can't have two
+        articles with the same name, so this test makes sure that in this case
+        the title will be '{}_{}'.format(directoryname, filename) -.-'''
+
+        def title_side_effect(title):
+            if title == 'new title' or title == 'new title_1':
+                return True
+            return False
+        titleexistMock.side_effect = title_side_effect
+        html = '<p> This is a new page </p>'
+
+        requests_data = {
+            'type': 'page',
+            'title': 'new title_2',
+            'space': {'key': self.space},
+            'body': {
+                'storage': {
+                    'value': html,
+                    'representation': 'storage'
+                },
+            },
+        }
+        requests_data_json = json.dumps(requests_data)
+        self.json.dumps.return_value = requests_data_json
+
+        self.git2sc.create_page('new title', html)
+
+        self.assertEqual(
+            self.json.dumps.assert_called_with(requests_data),
+            None,
+        )
+
+    @patch('git2sc.git2sc.shlex', autospect=True)
     def test_can_load_files_safely(self, shlexMock):
         '''Required to ensure that we can load files in a safe way'''
         path_to_file = '/path/to/file'
@@ -573,54 +635,30 @@ class TestGit2SC(unittest.TestCase):
 
         self.assertTrue(self.requests_error.called)
 
-
-class TestGit2SC_requests_error(unittest.TestCase):
-    '''Test class for the Git2SC _requests_error method'''
-
-    def setUp(self):
-        self.api_url = 'https://confluence.sucks.com/wiki/rest/api'
-        self.auth_string = 'user:password'
-        self.auth = tuple(self.auth_string.split(':'))
-        self.space = 'TST'
-
-        self.requests_object = Mock()
-
-        self.print_patch = patch('git2sc.git2sc.print')
-        self.print = self.print_patch.start()
-
-        self.getspacearticles_patch = patch(
-            'git2sc.git2sc.Git2SC.get_space_articles',
-            autospect=True,
-        )
-        self.getspacearticles = self.getspacearticles_patch.start()
-        self.git2sc = Git2SC(self.api_url, self.auth_string, self.space)
-
-    def tearDown(self):
-        self.print.stop()
-        self.getspacearticles_patch.stop()
-
     def test_request_error_display_message_if_rc_not_200(self):
         '''Required to ensure that the _requests_error method returns the
         desired structure inside the print when a requests instance has a
         return code different from 200'''
 
+        self.requests_error_patch.stop()
+        self.requests_object = Mock()
         self.requests_object.status_code = 400
         self.requests_object.text = json.dumps({
             'statusCode': 400,
             'message': 'Error message',
         })
-        self.git2sc._requests_error(self.requests_object)
-        self.assertEqual(
-            self.print.assert_called_with(
-                'Error 400: Error message'
-            ),
-            None,
-        )
+        self.json.loads.side_effect = json.loads
+        with self.assertRaises(Exception) as err:
+            self.git2sc._requests_error(self.requests_object)
+        self.assertEqual(err.exception.args[0], 'Error 400: Error message')
+        self.requests_error_patch.start()
 
     def test_request_error_do_nothing_if_rc_is_200(self):
         '''Required to ensure that the _requests_error method does nothing
         if the return code is 200'''
 
+        self.requests_error_patch.stop()
+        self.requests_object = Mock()
         self.requests_object.status_code = 200
         self.requests_object.text = json.dumps({
             'statusCode': 200,
@@ -628,6 +666,7 @@ class TestGit2SC_requests_error(unittest.TestCase):
         })
         self.git2sc._requests_error(self.requests_object)
         self.assertFalse(self.print.called)
+        self.requests_error_patch.start()
 
     def test_can_get_id_of_article_by_name(self):
         '''Test we can get the id of an article by the name, we'll use it in
