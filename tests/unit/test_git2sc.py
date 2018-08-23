@@ -895,7 +895,6 @@ class TestGit2SC(unittest.TestCase):
         self.git2sc._requests_error(self.requests_object)
         self.assertFalse(self.print.called)
         self.requests_error_patch.start()
-<<<<<<< HEAD
 
     @patch('git2sc.git2sc.Git2SC.create_page', autospect=True)
     @patch('git2sc.git2sc.Git2SC._create_directory_readme', autospect=True)
