@@ -27,6 +27,9 @@ class TestGit2SC(unittest.TestCase):
         self.os_patch = patch('git2sc.git2sc.os', autospect=True)
         self.os = self.os_patch.start()
 
+        self.print_patch = patch('git2sc.git2sc.print', autospect=True)
+        self.print = self.print_patch.start()
+
         self.getspacearticles_patch = patch(
             'git2sc.git2sc.Git2SC.get_space_articles',
             autospect=True,
@@ -584,54 +587,30 @@ class TestGit2SC(unittest.TestCase):
 
         self.assertTrue(self.requests_error.called)
 
-
-class TestGit2SC_requests_error(unittest.TestCase):
-    '''Test class for the Git2SC _requests_error method'''
-
-    def setUp(self):
-        self.api_url = 'https://confluence.sucks.com/wiki/rest/api'
-        self.auth_string = 'user:password'
-        self.auth = tuple(self.auth_string.split(':'))
-        self.space = 'TST'
-
-        self.requests_object = Mock()
-
-        self.print_patch = patch('git2sc.git2sc.print')
-        self.print = self.print_patch.start()
-
-        self.getspacearticles_patch = patch(
-            'git2sc.git2sc.Git2SC.get_space_articles',
-            autospect=True,
-        )
-        self.getspacearticles = self.getspacearticles_patch.start()
-        self.git2sc = Git2SC(self.api_url, self.auth_string, self.space)
-
-    def tearDown(self):
-        self.print.stop()
-        self.getspacearticles_patch.stop()
-
     def test_request_error_display_message_if_rc_not_200(self):
         '''Required to ensure that the _requests_error method returns the
         desired structure inside the print when a requests instance has a
         return code different from 200'''
 
+        self.requests_error_patch.stop()
+        self.requests_object = Mock()
         self.requests_object.status_code = 400
         self.requests_object.text = json.dumps({
             'statusCode': 400,
             'message': 'Error message',
         })
-        self.git2sc._requests_error(self.requests_object)
-        self.assertEqual(
-            self.print.assert_called_with(
-                'Error 400: Error message'
-            ),
-            None,
-        )
+        self.json.loads.side_effect = json.loads
+        with self.assertRaises(Exception) as err:
+            self.git2sc._requests_error(self.requests_object)
+        self.assertEqual(err.exception.args[0], 'Error 400: Error message')
+        self.requests_error_patch.start()
 
     def test_request_error_do_nothing_if_rc_is_200(self):
         '''Required to ensure that the _requests_error method does nothing
         if the return code is 200'''
 
+        self.requests_error_patch.stop()
+        self.requests_object = Mock()
         self.requests_object.status_code = 200
         self.requests_object.text = json.dumps({
             'statusCode': 200,
@@ -639,6 +618,7 @@ class TestGit2SC_requests_error(unittest.TestCase):
         })
         self.git2sc._requests_error(self.requests_object)
         self.assertFalse(self.print.called)
+        self.requests_error_patch.start()
 
     def test_can_get_id_of_article_by_name(self):
         '''Test we can get the id of an article by the name, we'll use it in

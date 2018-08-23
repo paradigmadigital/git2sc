@@ -24,9 +24,9 @@ class Git2SC():
         else:
             response = json.loads(requests_object.text)
 
-            print('Error {}: {}'.format(
+            raise Exception('Error {}: {}'.format(
                 response['statusCode'],
-                response['message'],
+                response['message']
             ))
 
     def get_page_info(self, pageid):
@@ -207,11 +207,11 @@ class Git2SC():
             shell=False,
         ).decode().replace('<!DOCTYPE html>\n', '')
 
-    def _process_md(self, adoc_file_path):
+    def _process_md(self, md_file_path):
         '''Takes a path to an md file, transform it and return it as
         html'''
 
-        clean_path = self._safe_load_file(adoc_file_path)
+        clean_path = self._safe_load_file(md_file_path)
 
         return pypandoc.convert_file(clean_path, 'html')
 
