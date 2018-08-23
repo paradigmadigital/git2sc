@@ -87,16 +87,17 @@ class Git2SC():
         '''Update a confluence page with the content of the html variable'''
 
         try:
-            self.pages[pageid]
+            self.pages[pageid]['version']
         except KeyError:
             self.pages[pageid] = self.get_page_info(pageid)
 
         version = int(self.pages[pageid]['version']['number']) + 1
 
-        ancestors = self.pages[pageid]['ancestors'][-1]
-        del ancestors['_links']
-        del ancestors['_expandable']
-        del ancestors['extensions']
+        ancestors = self.pages[pageid]['ancestors'][-1:]
+        if ancestors != []:
+            del ancestors[0]['_links']
+            del ancestors[0]['_expandable']
+            del ancestors[0]['extensions']
 
         if title is not None:
             self.pages[pageid]['title'] = title
@@ -106,7 +107,7 @@ class Git2SC():
             'type': 'page',
             'title': self.pages[pageid]['title'],
             'version': {'number': version},
-            'ancestors': [ancestors],
+            'ancestors': ancestors,
             'body': {
                 'storage':
                 {
@@ -116,13 +117,13 @@ class Git2SC():
             }
         }
 
-        data = json.dumps(data)
+        data_json = json.dumps(data)
 
         url = '{base}/content/{pageid}'.format(base=self.api_url, pageid=pageid)
 
         r = requests.put(
             url,
-            data=data,
+            data=data_json,
             auth=self.auth,
             headers={'Content-Type': 'application/json'}
         )

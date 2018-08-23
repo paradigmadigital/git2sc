@@ -1,4 +1,9 @@
 
+0.7.3 / 2018-08-22
+==================
+
+  * Allow the update of articles without ancestors
+
 0.7.2 / 2018-08-22
 ==================
 

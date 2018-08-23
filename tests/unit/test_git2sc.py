@@ -218,7 +218,55 @@ class TestGit2SC(unittest.TestCase):
             }
         }
         data_json = json.dumps(data)
-        self.json.dumps.return_value = data_json
+        self.json.dumps.side_effect = json.dumps
+
+        self.git2sc.update_page(page_id, html)
+
+        self.assertEqual(
+            self.requests.put.assert_called_with(
+                '{}/content/{}'.format(
+                    self.api_url,
+                    page_id,
+                ),
+                data=data_json,
+                auth=self.auth,
+                headers={'Content-Type': 'application/json'},
+            ),
+            None,
+        )
+        self.assertTrue(self.requests_error.called)
+
+    def test_can_update_articles_without_ancestors(self):
+        '''Required to ensure that the update_page method is able to update
+        the confluence page even though it doesn't have an ancestors field'''
+
+        page_id = '372274410'
+        html = '<p> This is a test </p>'
+        self.git2sc.pages = {}
+        self.git2sc.pages[page_id] = {
+            'version': {
+                'number': 1
+            },
+            'title': 'Test page title',
+            'ancestors': [],
+        }
+
+        data = {
+            'id': page_id,
+            'type': 'page',
+            'title': 'Test page title',
+            'version': {'number': 2},
+            'ancestors': [],
+            'body': {
+                'storage':
+                {
+                    'representation': 'storage',
+                    'value': html,
+                }
+            }
+        }
+        data_json = json.dumps(data)
+        self.json.dumps.side_effect = json.dumps
 
         self.git2sc.update_page(page_id, html)
 
