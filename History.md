@@ -1,4 +1,9 @@
 
+0.7.1 / 2018-08-22
+==================
+
+  * Bring back the requests_error tests to the main testcase
+
 0.7.0 / 2018-08-21
 ==================
 
