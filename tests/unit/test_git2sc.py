@@ -271,7 +271,8 @@ class TestGit2SC(unittest.TestCase):
         self.git2sc.update_page(page_id, html, 'new title')
         self.assertEqual(self.git2sc.pages[page_id]['title'], 'new title')
 
-    def test_can_create_articles_as_parent(self):
+    @patch('git2sc.git2sc.Git2SC.get_page_info', autospect=True)
+    def test_can_create_articles_as_parent(self, getPageInfoMock):
         '''Required to ensure that the create_page method posts to the
         correct api endpoint with the correct data structure if no
         inheritance is set'''
@@ -290,9 +291,14 @@ class TestGit2SC(unittest.TestCase):
             },
         }
         requests_data_json = json.dumps(requests_data)
-        self.json.dumps.return_value = requests_data_json
+        self.json.dumps.side_effect = json.dumps
 
-        self.git2sc.create_page('new title', html)
+        response_data = {'id': '412254212', 'type': 'page'}
+        response_data_json = json.dumps(response_data)
+        self.requests.post.return_value.text = response_data_json
+        self.json.loads.return_value = response_data
+
+        page_id = self.git2sc.create_page('new title', html)
 
         self.assertEqual(
             self.json.dumps.assert_called_with(requests_data),
@@ -308,6 +314,15 @@ class TestGit2SC(unittest.TestCase):
             None,
         )
         self.assertTrue(self.requests_error.called)
+        self.assertEqual(
+            self.json.loads.assert_called_with(response_data_json),
+            None,
+        )
+        self.assertEqual(
+            getPageInfoMock.assert_called_with(page_id),
+            None,
+        )
+        self.assertEqual(page_id, '412254212')
 
     def test_can_create_articles_as_a_child(self):
         '''Required to ensure that the create_page method posts to the
@@ -332,7 +347,12 @@ class TestGit2SC(unittest.TestCase):
         requests_data_json = json.dumps(requests_data)
         self.json.dumps.return_value = requests_data_json
 
-        self.git2sc.create_page('new title', html, parent_id)
+        response_data = {'id': '412254212', 'type': 'page'}
+        response_data_json = json.dumps(response_data)
+        self.requests.post.return_value.text = response_data_json
+        self.json.loads.return_value = response_data
+
+        page_id = self.git2sc.create_page('new title', html, parent_id)
 
         self.assertEqual(
             self.json.dumps.assert_called_with(requests_data),
@@ -348,8 +368,47 @@ class TestGit2SC(unittest.TestCase):
             None,
         )
         self.assertTrue(self.requests_error.called)
+        self.assertEqual(
+            self.json.loads.assert_called_with(response_data_json),
+            None,
+        )
+        self.assertEqual(page_id, '412254212')
 
-    @patch('git2sc.git2sc.shlex')
+    @patch('git2sc.git2sc.Git2SC._title_exist', autospect=True)
+    def test_can_create_articles_when_name_exists(self, titleexistMock):
+        '''In Confluence even though they use an article_id, you can't have two
+        articles with the same name, so this test makes sure that in this case
+        the title will be '{}_{}'.format(directoryname, filename) -.-'''
+
+        def title_side_effect(title):
+            if title == 'new title' or title == 'new title_1':
+                return True
+            return False
+        titleexistMock.side_effect = title_side_effect
+        html = '<p> This is a new page </p>'
+
+        requests_data = {
+            'type': 'page',
+            'title': 'new title_2',
+            'space': {'key': self.space},
+            'body': {
+                'storage': {
+                    'value': html,
+                    'representation': 'storage'
+                },
+            },
+        }
+        requests_data_json = json.dumps(requests_data)
+        self.json.dumps.return_value = requests_data_json
+
+        self.git2sc.create_page('new title', html)
+
+        self.assertEqual(
+            self.json.dumps.assert_called_with(requests_data),
+            None,
+        )
+
+    @patch('git2sc.git2sc.shlex', autospect=True)
     def test_can_load_files_safely(self, shlexMock):
         '''Required to ensure that we can load files in a safe way'''
         path_to_file = '/path/to/file'
