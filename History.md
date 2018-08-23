@@ -1,4 +1,19 @@
 
+0.7.3 / 2018-08-22
+==================
+
+  * Allow the update of articles without ancestors
+
+0.7.2 / 2018-08-22
+==================
+
+  * Improve create_article method
+
+0.7.1 / 2018-08-22
+==================
+
+  * Bring back the requests_error tests to the main testcase
+
 0.7.0 / 2018-08-21
 ==================
 
