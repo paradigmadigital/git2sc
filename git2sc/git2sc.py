@@ -93,13 +93,11 @@ class Git2SC():
 
         version = int(self.pages[pageid]['version']['number']) + 1
 
-        try:
-            ancestors = [self.pages[pageid]['ancestors'][-1]]
+        ancestors = self.pages[pageid]['ancestors'][-1:]
+        if ancestors != []:
             del ancestors[0]['_links']
             del ancestors[0]['_expandable']
             del ancestors[0]['extensions']
-        except IndexError:
-            ancestors = []
 
         if title is not None:
             self.pages[pageid]['title'] = title
