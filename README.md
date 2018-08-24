@@ -13,7 +13,14 @@ pip3 install -r requirements.txt
 python3 setup.py install
 ```
 
-Set up the credentials in the environment variables:
+If you don't have pandoc installed, do so:
+
+```bash
+sudo apt-get install pandoc asciidoctor
+```
+
+Set up the credentials of a user that can read and write the pages in the
+environment variables:
 
 * `GIT2SC_API_URL`: `https://company.atlassian.net/wiki/rest/api`
 * `GIT2SC_AUTH`: `username:password`
