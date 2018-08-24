@@ -14,14 +14,15 @@ class TestGit2SC(unittest.TestCase):
         self.auth = tuple(self.auth_string.split(':'))
         self.space = 'TST'
 
-        self.requests_patch = patch('git2sc.git2sc.requests')
+        self.requests_patch = patch('git2sc.git2sc.requests', autospect=True)
         self.requests = self.requests_patch.start()
         self.requests_error_patch = patch(
             'git2sc.git2sc.Git2SC._requests_error',
+            autospect=True
         )
         self.requests_error = self.requests_error_patch.start()
 
-        self.json_patch = patch('git2sc.git2sc.json')
+        self.json_patch = patch('git2sc.git2sc.json', autospect=True)
         self.json = self.json_patch.start()
 
         self.os_patch = patch('git2sc.git2sc.os', autospect=True)
@@ -40,6 +41,7 @@ class TestGit2SC(unittest.TestCase):
     def tearDown(self):
         self.requests_patch.stop()
         self.requests_error_patch.stop()
+        self.print.stop()
         self.json_patch.stop()
         self.os_patch.stop()
         self.getspacearticles_patch.stop()
@@ -474,11 +476,11 @@ class TestGit2SC(unittest.TestCase):
             None,
         )
 
-    @patch('git2sc.git2sc.Git2SC._safe_load_file')
-    @patch('git2sc.git2sc.subprocess')
+    @patch('git2sc.git2sc.Git2SC._safe_load_file', autospect=True)
+    @patch('git2sc.git2sc.subprocess', autospect=True)
     def test_can_process_adoc(self, subprocessMock, loadfileMock):
         '''Required to ensure that we can transform adoc files to html'''
-        path_to_file = '/path/to/file'
+        path_to_file = '/path/to/file.adoc'
         result = self.git2sc._process_adoc(path_to_file)
 
         self.assertEqual(
@@ -505,8 +507,8 @@ class TestGit2SC(unittest.TestCase):
             return_value.replace('<!DOCTYPE html>\n', '')
         )
 
-    @patch('git2sc.git2sc.Git2SC._safe_load_file')
-    @patch('git2sc.git2sc.open')
+    @patch('git2sc.git2sc.Git2SC._safe_load_file', autospect=True)
+    @patch('git2sc.git2sc.open', autospect=True)
     def test_can_process_html(self, openMock, loadfileMock):
         '''Required to ensure that we can load html files'''
         path_to_file = '/path/to/file.html'
@@ -551,7 +553,7 @@ class TestGit2SC(unittest.TestCase):
             pypandocMock.convert_file.return_value
         )
 
-    @patch('git2sc.git2sc.Git2SC._process_adoc')
+    @patch('git2sc.git2sc.Git2SC._process_adoc', autospect=True)
     def test_import_file_method_supports_adoc_files(self, adocMock):
         '''Required to ensure that the import_file method as a wrapper
         of the _process_* recognizes asciidoc files'''
@@ -567,7 +569,7 @@ class TestGit2SC(unittest.TestCase):
             adocMock.return_value
         )
 
-    @patch('git2sc.git2sc.Git2SC._process_html')
+    @patch('git2sc.git2sc.Git2SC._process_html', autospect=True)
     def test_import_file_method_supports_html_files(self, htmlMock):
         '''Required to ensure that the import_file method as a wrapper
         of the _process_* recognizes html files'''
@@ -583,7 +585,7 @@ class TestGit2SC(unittest.TestCase):
             htmlMock.return_value
         )
 
-    @patch('git2sc.git2sc.Git2SC._process_md')
+    @patch('git2sc.git2sc.Git2SC._process_md', autospect=True)
     def test_import_file_method_supports_md_files(self, mdMock):
         '''Required to ensure that the import_file method as a wrapper
         of the _process_* recognizes markdown files'''

@@ -16,11 +16,11 @@ class TestMain(unittest.TestCase):
         )
         type(self.os).environ = self.env
 
-        self.load_parser_patch = patch('git2sc.load_parser')
+        self.load_parser_patch = patch('git2sc.load_parser', autospect=True)
         self.load_parser = self.load_parser_patch.start()
         self.args = self.load_parser.return_value.parse_args.return_value
 
-        self.print_patch = patch('git2sc.print')
+        self.print_patch = patch('git2sc.print', autospect=True)
         self.print = self.print_patch.start()
 
         self.args.space = 'TST'
