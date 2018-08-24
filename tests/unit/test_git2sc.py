@@ -1,7 +1,7 @@
 import os
 import json
 import unittest
-from unittest.mock import patch, Mock
+from unittest.mock import patch, Mock, call
 from git2sc.git2sc import Git2SC, UnknownExtension
 
 
@@ -636,6 +636,232 @@ class TestGit2SC(unittest.TestCase):
         self.git2sc.delete_page(page_id)
 
         self.assertTrue(self.requests_error.called)
+
+    @patch('git2sc.git2sc.Git2SC.update_page', autospect=True)
+    @patch('git2sc.git2sc.Git2SC._discover_directory_readme', autospect=True)
+    @patch('git2sc.git2sc.Git2SC.get_space_homepage', autospect=True)
+    def test_can_import_mainpage(
+        self,
+        gethomepageMock,
+        discoverreadmeMock,
+        updatepageMock,
+    ):
+        '''Given a root directory path test that git2sc substitutes the homepage
+        of the confluence page with the README.adoc
+        '''
+
+        gethomepageMock.return_value = '372223610'
+        discoverreadmeMock.return_value = '<p> This is a test </p>'
+
+        self.git2sc._process_mainpage('.')
+
+        self.assertEqual(
+            gethomepageMock.assert_called_with(),
+            None,
+        )
+        self.assertEqual(
+            discoverreadmeMock.assert_called_with('.'),
+            None,
+        )
+        self.assertEqual(
+            updatepageMock.assert_called_with(
+                gethomepageMock.return_value,
+                discoverreadmeMock.return_value,
+            ),
+            None,
+        )
+
+    @patch('git2sc.git2sc.Git2SC.import_file', autospect=True)
+    def test_can_discover_directory_readme_adoc(self, importfileMock):
+        '''Given a directory path test that git2sc returns the html of the
+        README.adoc file'''
+
+        directory_path = '/path/to/directory'
+        self.os.path.join.side_effect = os.path.join
+        self.os.path.basename.side_effect = os.path.basename
+
+        def true_if_adoc(file_path):
+            extension = os.path.splitext(file_path)[-1]
+            if extension == '.adoc':
+                return True
+            return False
+
+        self.os.path.isfile.side_effect = true_if_adoc
+
+        result = self.git2sc._discover_directory_readme(directory_path)
+
+        self.assertTrue(
+            call(directory_path, 'README.adoc')
+            in self.os.path.join.mock_calls
+        )
+
+        self.assertEqual(
+            importfileMock.assert_called_with('/path/to/directory/README.adoc'),
+            None,
+        )
+        self.assertEqual(
+            result,
+            importfileMock.return_value
+        )
+
+    @patch('git2sc.git2sc.Git2SC.import_file', autospect=True)
+    def test_can_discover_directory_readme_md(self, importfileMock):
+        '''Given a directory path test that git2sc returns the html of the
+        README.md file'''
+
+        directory_path = '/path/to/directory'
+        self.os.path.join.side_effect = os.path.join
+        self.os.path.basename.side_effect = os.path.basename
+
+        def true_if_md(file_path):
+            extension = os.path.splitext(file_path)[-1]
+            if extension == '.md':
+                return True
+            return False
+
+        self.os.path.isfile.side_effect = true_if_md
+
+        result = self.git2sc._discover_directory_readme(directory_path)
+
+        self.assertTrue(
+            call(directory_path, 'README.md')
+            in self.os.path.join.mock_calls
+        )
+
+        self.assertEqual(
+            importfileMock.assert_called_with('/path/to/directory/README.md'),
+            None,
+        )
+        self.assertEqual(
+            result,
+            importfileMock.return_value
+        )
+
+    @patch('git2sc.git2sc.Git2SC.import_file', autospect=True)
+    def test_discover_directory_readme_works_when_no_readme(
+        self,
+        importfileMock,
+    ):
+        '''Given a directory path test that git2sc where no README exist return
+        "No README here, keep on looking"'''
+
+        directory_path = '/path/to/directory'
+        self.os.path.join.side_effect = os.path.join
+        self.os.path.basename.side_effect = os.path.basename
+
+        self.os.path.isfile.return_value = False
+
+        result = self.git2sc._discover_directory_readme(directory_path)
+
+        self.assertEqual(
+            result,
+            "No README here, keep on looking :("
+        )
+
+    @patch('git2sc.git2sc.Git2SC.create_page', autospect=True)
+    @patch('git2sc.git2sc.Git2SC._discover_directory_readme', autospect=True)
+    def test_can_process_directory_readme(
+        self,
+        discoverreadmeMock,
+        createpageMock,
+    ):
+        '''Given a directory path test that git2sc creates a page with the
+        contents of README being the title the name of the directory'''
+
+        directory_path = '/path/to/directory'
+        createpageMock.return_value = '372223610'
+        self.os.path.join.side_effect = os.path.join
+        self.os.path.basename.side_effect = os.path.basename
+
+        result = self.git2sc._create_directory_readme(directory_path)
+
+        self.assertEqual(
+            discoverreadmeMock.assert_called_with(
+                '/path/to/directory',
+            ),
+            None,
+        )
+        self.assertEqual(
+            createpageMock.assert_called_with(
+                'directory',
+                discoverreadmeMock.return_value,
+                None,
+            ),
+            None
+        )
+        self.assertEqual(
+            result,
+            createpageMock.return_value,
+        )
+
+    @patch('git2sc.git2sc.Git2SC.update_page', autospect=True)
+    @patch('git2sc.git2sc.Git2SC._get_article_id', autospect=True)
+    @patch('git2sc.git2sc.Git2SC._discover_directory_readme', autospect=True)
+    def test_can_update_the_directory_readme(
+        self,
+        discoverreadmeMock,
+        getarticleMock,
+        updatepageMock,
+    ):
+        '''Given a directory path test that git2sc updates a page with the
+        contents of README being the title the name of the directory'''
+
+        directory_path = '/path/to/directory'
+        self.os.path.join.side_effect = os.path.join
+        self.os.path.basename.side_effect = os.path.basename
+        getarticleMock.return_value = '412254212'
+
+        self.git2sc._update_directory_readme(directory_path)
+
+        self.assertEqual(getarticleMock.assert_called_with('directory'), None)
+
+        self.assertEqual(
+            discoverreadmeMock.assert_called_with(
+                '/path/to/directory',
+            ),
+            None,
+        )
+        self.assertEqual(
+            updatepageMock.assert_called_with(
+                '412254212',
+                discoverreadmeMock.return_value,
+            ),
+            None
+        )
+
+    @patch('git2sc.git2sc.Git2SC.create_page', autospect=True)
+    @patch('git2sc.git2sc.Git2SC.import_file', autospect=True)
+    def test_process_directory_readme_can_accept_parent_id(
+        self,
+        importfileMock,
+        createpageMock,
+    ):
+        '''Given a directory path test that git2sc creates a page with the
+        contents of README.md under a specified article id'''
+
+        directory_path = '/path/to/directory'
+        parent_id = '372223610'
+        self.os.path.join.side_effect = os.path.join
+        self.os.path.basename.side_effect = os.path.basename
+
+        def true_if_md(file_path):
+            extension = os.path.splitext(file_path)[-1]
+            if extension == '.md':
+                return True
+            return False
+
+        self.os.path.isfile.side_effect = true_if_md
+
+        self.git2sc._create_directory_readme(directory_path, parent_id)
+
+        self.assertEqual(
+            createpageMock.assert_called_with(
+                'directory',
+                importfileMock.return_value,
+                parent_id
+            ),
+            None
+        )
 
     def test_request_error_display_message_if_rc_not_200(self):
         '''Required to ensure that the _requests_error method returns the

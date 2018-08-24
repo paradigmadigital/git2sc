@@ -222,6 +222,45 @@ class Git2SC():
         with open(clean_path, 'r') as f:
             return f.read()
 
+    def _process_mainpage(self, directory_path):
+        '''Takes a path to a file and updates the confluence homepage'''
+        homepage_id = self.get_space_homepage()
+        html = self._discover_directory_readme(directory_path)
+        self.update_page(homepage_id, html)
+        return homepage_id
+
+    def _discover_directory_readme(self, directory_path, parent_id=None):
+        '''Takes a directory path, searches for README.adoc or README.md and
+        returns it's html'''
+
+        adoc_file = os.path.join(directory_path, 'README.adoc')
+        md_file = os.path.join(directory_path, 'README.md')
+        if os.path.isfile(adoc_file):
+            readme_file = adoc_file
+        elif os.path.isfile(md_file):
+            readme_file = md_file
+        else:
+            return "No README here, keep on looking :("
+
+        return self.import_file(readme_file)
+
+    def _create_directory_readme(self, directory_path, parent_id=None):
+        '''Takes a directory path, searches for README.adoc or README.md and
+        creates a confluence page with that information'''
+        return self.create_page(
+            os.path.basename(directory_path),
+            self._discover_directory_readme(directory_path),
+            parent_id,
+        )
+
+    def _update_directory_readme(self, directory_path):
+        '''Takes a directory path, deduces the article_id and updates it with
+        the contents of the README.adoc or README.md'''
+        self.update_page(
+            self._get_article_id(os.path.basename(directory_path)),
+            self._discover_directory_readme(directory_path),
+        )
+
     def import_file(self, file_path):
         '''Takes a path to a file and decides which _process.* method to use
         based on the extension'''
