@@ -1,4 +1,14 @@
 
+0.8.1 / 2018-08-23
+==================
+
+  * Add autospect=True to the mocks
+
+0.8.0 / 2018-08-23
+==================
+
+  * Add process directories and mainpage support
+
 0.7.3 / 2018-08-22
 ==================
 
