@@ -51,6 +51,9 @@ def main():
             elif args.article_command == 'create':
                 g.create_page(args.title, html, args.parent_id)
 
+    elif args.subcommand == 'upload':
+        g.directory_full_upload(args.path, args.exclude, args.parent_id)
+
 
 if __name__ == "__main__":
     main()

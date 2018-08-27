@@ -75,5 +75,26 @@ def load_parser():
         help='Confluence article id',
     )
 
+    upload_parser = subcommand_parser.add_parser('upload')
+    upload_parser.add_argument(
+        "path",
+        type=str,
+        help='Path to directory',
+    )
+
+    upload_parser.add_argument(
+        "--exclude",
+        nargs='*',
+        default=['.git', '.gitignore', '.gitmodules'],
+        help="List of directories to exclude",
+    )
+    upload_parser.add_argument(
+        "-p",
+        "--parent_id",
+        type=str,
+        nargs='?',
+        default=None,
+        help="Parent id of the article to create",
+    )
     argcomplete.autocomplete(parser)
     return parser
