@@ -278,6 +278,63 @@ class Git2SC():
             ))
         return html
 
+    def directory_full_upload(
+        self,
+        path,
+        excluded_items,
+        parent_id=None
+    ):
+        '''Takes a path to a directory and crawls all the subdirectories and
+        files and uploads them to confluence.
+
+        The uploaded files are the ones supported by the import_file method.
+
+        Optionally you can set up a parent_id to create the confluence structure
+        hanging below a confluence article id
+        '''
+
+        is_root_directory = True
+        parent_ids = {}
+        parent_ids[path] = parent_id
+        for root, directories, files in os.walk(path):
+            if is_root_directory and parent_id is None:
+                self._process_mainpage(root)
+            elif is_root_directory and parent_id is not None:
+                parent_id = self._create_directory_readme(
+                    root,
+                    parent_id,
+                )
+                parent_ids[root] = parent_id
+            else:
+                directory_parent_id = parent_ids[os.path.dirname(root)]
+                parent_id = self._create_directory_readme(
+                    root,
+                    directory_parent_id,
+                )
+                parent_ids[root] = parent_id
+            is_root_directory = False
+
+            for file in files:
+                filename = '.'.join(os.path.basename(file).split('.')[:-1])
+
+                try:
+                    html = self.import_file(
+                        os.path.join(root, file)
+                    )
+                except UnknownExtension:
+                    continue
+
+                if not filename == 'README' and file not in excluded_items:
+                    self.create_page(
+                        filename,
+                        html,
+                        parent_id,
+                    )
+
+            for directory in directories:
+                if directory in excluded_items:
+                    directories.remove(directory)
+
 
 class UnknownExtension(Exception):
     pass

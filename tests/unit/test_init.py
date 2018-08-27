@@ -216,3 +216,21 @@ class TestMain(unittest.TestCase):
             ),
             None
         )
+
+    def test_upload_directory_subcommand(self):
+        '''Required to ensure that the main program reacts as expected when
+        called with the upload directory arguments'''
+        self.args.subcommand = 'upload'
+        self.args.path = '/path/to/directory'
+        self.args.exclude = ['.git']
+        self.args.parent_id = None
+
+        main()
+        self.assertEqual(
+            self.git2sc.return_value.directory_full_upload.assert_called_with(
+                self.args.path,
+                self.args.exclude,
+                None
+            ),
+            None
+        )
