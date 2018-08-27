@@ -1,3 +1,4 @@
+import pytest
 import unittest
 from git2sc.cli import load_parser
 
@@ -175,6 +176,10 @@ class TestArgparse(unittest.TestCase):
         )
         self.assertEqual(parsed.exclude, ['excluded_dir1', 'excluded_dir2'])
 
+    @pytest.mark.skip(
+        'Not yet implemented, see '
+        'https://git.paradigmadigital.com/seguridad/git2sc/issues/8'
+    )
     def test_has_subcommand_sync_directory_can_specify_parent_id(self):
         '''Required to ensure that the parser is correctly configured to
         sync a directory to a parent article'''

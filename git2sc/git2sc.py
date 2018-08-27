@@ -360,15 +360,12 @@ class Git2SC():
         for root, directories, files in os.walk(path):
             if is_root_directory and parent_id is None:
                 article_id = self._process_mainpage(root)
-            # elif is_root_directory and parent_id is not None:
-            #     parent_id = self._update_directory_readme(
-            #         root,
-            #         parent_id,
-            #     )
-            #     parent_ids[root] = parent_id
             else:
                 article_id = self._get_article_id(os.path.basename(root))
-                directory_parent_id = parent_ids[os.path.dirname(root)]
+                if is_root_directory:
+                    directory_parent_id = parent_id
+                else:
+                    directory_parent_id = parent_ids[os.path.dirname(root)]
                 if article_id is not None:
                     self._update_directory_readme(root)
                 else:
