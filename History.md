@@ -1,4 +1,10 @@
 
+1.0.0 / 2018-08-27
+==================
+
+  * Skip update_directory with parent tests
+  * Git sync working without parent
+
 0.8.1 / 2018-08-23
 ==================
 
