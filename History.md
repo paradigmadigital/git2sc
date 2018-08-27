@@ -5,6 +5,11 @@
   * Skip update_directory with parent tests
   * Git sync working without parent
 
+0.9.0 / 2018-08-27
+==================
+
+  * Add upload directory support
+
 0.8.1 / 2018-08-23
 ==================
 

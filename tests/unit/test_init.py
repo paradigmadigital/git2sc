@@ -1,5 +1,4 @@
 import unittest
-import pytest
 from unittest.mock import patch, PropertyMock
 
 from git2sc import main

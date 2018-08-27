@@ -13,7 +13,7 @@ pip3 install -r requirements.txt
 python3 setup.py install
 ```
 
-If you don't have pandoc installed, do so:
+If you don't have pandoc and asciidoctor installed, do so:
 
 ```bash
 sudo apt-get install pandoc asciidoctor
