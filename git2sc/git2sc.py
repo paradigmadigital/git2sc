@@ -315,7 +315,7 @@ class Git2SC():
             is_root_directory = False
 
             for file in files:
-                filename = '.'.join(os.path.basename(file).split('.')[:-1])
+                filename = os.path.splitext(os.path.basename(file))[0]
 
                 try:
                     html = self.import_file(
@@ -377,7 +377,7 @@ class Git2SC():
             processed_articles_ids.append(article_id)
 
             for file in files:
-                filename = '.'.join(os.path.basename(file).split('.')[:-1])
+                filename = os.path.splitext(os.path.basename(file))[0]
 
                 try:
                     html = self.import_file(

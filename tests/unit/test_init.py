@@ -248,7 +248,6 @@ class TestMain(unittest.TestCase):
             self.git2sc.return_value.directory_update.assert_called_with(
                 self.args.path,
                 self.args.exclude,
-                None
             ),
             None
         )

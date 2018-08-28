@@ -950,6 +950,7 @@ class TestGit2SC(unittest.TestCase):
         importfileMock.side_effect = import_side_effect
         self.os.walk.side_effect = os.walk
         self.os.path.basename.side_effect = os.path.basename
+        self.os.path.splitext.side_effect = os.path.splitext
         self.os.path.dirname.side_effect = os.path.dirname
         self.os.path.join.side_effect = os.path.join
 
@@ -1025,6 +1026,7 @@ class TestGit2SC(unittest.TestCase):
         importfileMock.side_effect = import_side_effect
         self.os.walk.side_effect = os.walk
         self.os.path.basename.side_effect = os.path.basename
+        self.os.path.splitext.side_effect = os.path.splitext
         self.os.path.dirname.side_effect = os.path.dirname
         self.os.path.join.side_effect = os.path.join
 
@@ -1167,6 +1169,7 @@ class TestGit2SC(unittest.TestCase):
         importfileMock.side_effect = import_side_effect
         self.os.walk.side_effect = os.walk
         self.os.path.basename.side_effect = os.path.basename
+        self.os.path.splitext.side_effect = os.path.splitext
         self.os.path.dirname.side_effect = os.path.dirname
         self.os.path.join.side_effect = os.path.join
 
@@ -1291,6 +1294,7 @@ class TestGit2SC(unittest.TestCase):
         importfileMock.side_effect = import_side_effect
         self.os.walk.side_effect = os.walk
         self.os.path.basename.side_effect = os.path.basename
+        self.os.path.splitext.side_effect = os.path.splitext
         self.os.path.dirname.side_effect = os.path.dirname
         self.os.path.join.side_effect = os.path.join
 
@@ -1367,6 +1371,7 @@ class TestGit2SC(unittest.TestCase):
         importfileMock.side_effect = import_side_effect
         self.os.walk.side_effect = os.walk
         self.os.path.basename.side_effect = os.path.basename
+        self.os.path.splitext.side_effect = os.path.splitext
         self.os.path.dirname.side_effect = os.path.dirname
         self.os.path.join.side_effect = os.path.join
 
