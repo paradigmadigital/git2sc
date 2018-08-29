@@ -110,16 +110,5 @@ def load_parser():
         help="List of directories to exclude",
     )
 
-    # Not yet implemented, see
-    # https://git.paradigmadigital.com/seguridad/git2sc/issues/8'
-    # sync_parser.add_argument(
-    #     "-p",
-    #     "--parent_id",
-    #     type=str,
-    #     nargs='?',
-    #     default=None,
-    #     help="Parent id of the article to create",
-    # )
-
     argcomplete.autocomplete(parser)
     return parser
