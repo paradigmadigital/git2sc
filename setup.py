@@ -1,6 +1,6 @@
 from setuptools import setup
 
-version = '0.9.0'
+version = '1.0.0'
 
 setup(
     name='Git2SC',

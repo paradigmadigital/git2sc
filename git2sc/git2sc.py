@@ -315,7 +315,7 @@ class Git2SC():
             is_root_directory = False
 
             for file in files:
-                filename = '.'.join(os.path.basename(file).split('.')[:-1])
+                filename = os.path.splitext(os.path.basename(file))[0]
 
                 try:
                     html = self.import_file(
@@ -334,6 +334,87 @@ class Git2SC():
             for directory in directories:
                 if directory in excluded_items:
                     directories.remove(directory)
+
+    def directory_update(
+        self,
+        path,
+        excluded_items,
+        parent_id=None
+    ):
+        '''Takes a path to a directory and crawls all the subdirectories and
+        files and updates them on confluence.
+
+        The uploaded files are the ones supported by the import_file method.
+
+        Optionally you can set up a parent_id to create the confluence structure
+        hanging below a confluence article id.
+
+        Right now it will update or create each article even though it doesn't
+        have any changes.
+        '''
+
+        is_root_directory = True
+        parent_ids = {}
+        processed_articles_ids = []
+        parent_ids[path] = parent_id
+        for root, directories, files in os.walk(path):
+            if is_root_directory and parent_id is None:
+                article_id = self._process_mainpage(root)
+            else:
+                article_id = self._get_article_id(os.path.basename(root))
+                if is_root_directory:
+                    directory_parent_id = parent_id
+                else:
+                    directory_parent_id = parent_ids[os.path.dirname(root)]
+                if article_id is not None:
+                    self._update_directory_readme(root)
+                else:
+                    article_id = self._create_directory_readme(
+                        root,
+                        directory_parent_id,
+                    )
+                parent_ids[root] = article_id
+            processed_articles_ids.append(article_id)
+
+            for file in files:
+                filename = os.path.splitext(os.path.basename(file))[0]
+
+                try:
+                    html = self.import_file(
+                        os.path.join(root, file)
+                    )
+                except UnknownExtension:
+                    continue
+
+                if not filename == 'README' and file not in excluded_items:
+                    article_id = self._get_article_id(filename)
+
+                    if article_id in processed_articles_ids:
+                        continue
+                    directory_parent_id = parent_ids[root]
+
+                    if article_id is not None:
+                        self.update_page(
+                            article_id,
+                            html,
+                        )
+                    else:
+                        article_id = self.create_page(
+                            filename,
+                            html,
+                            directory_parent_id,
+                        )
+                    processed_articles_ids.append(article_id)
+
+            for directory in directories:
+                if directory in excluded_items:
+                    directories.remove(directory)
+
+            is_root_directory = False
+
+        for page_id in self.pages.keys():
+            if page_id not in processed_articles_ids:
+                self.delete_page(page_id)
 
 
 class UnknownExtension(Exception):

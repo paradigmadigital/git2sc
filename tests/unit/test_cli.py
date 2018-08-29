@@ -145,3 +145,32 @@ class TestArgparse(unittest.TestCase):
             ]
         )
         self.assertEqual(parsed.parent_id, 'parent_id')
+
+    def test_has_subcommand_sync_directory(self):
+        '''Required to ensure that the parser is correctly configured to
+        sync a directory'''
+        parsed = self.parser.parse_args(
+            [
+                'TST',
+                'sync',
+                '/path/to/directory',
+            ]
+        )
+        self.assertEqual(parsed.subcommand, 'sync')
+        self.assertEqual(parsed.path, '/path/to/directory')
+        self.assertEqual(parsed.exclude, ['.git', '.gitignore', '.gitmodules'])
+
+    def test_has_subcommand_sync_directory_can_specify_excluded_dirs(self):
+        '''Required to ensure that the parser is correctly configured to
+        sync a directory with excluded directories'''
+        parsed = self.parser.parse_args(
+            [
+                'TST',
+                'sync',
+                '/path/to/directory',
+                '--exclude',
+                'excluded_dir1',
+                'excluded_dir2',
+            ]
+        )
+        self.assertEqual(parsed.exclude, ['excluded_dir1', 'excluded_dir2'])
