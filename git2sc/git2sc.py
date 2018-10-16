@@ -95,9 +95,12 @@ class Git2SC():
 
         ancestors = self.pages[pageid]['ancestors'][-1:]
         if ancestors != []:
-            del ancestors[0]['_links']
-            del ancestors[0]['_expandable']
-            del ancestors[0]['extensions']
+            try:
+                del ancestors[0]['_links']
+                del ancestors[0]['_expandable']
+                del ancestors[0]['extensions']
+            except KeyError:
+                pass
 
         if title is not None:
             self.pages[pageid]['title'] = title

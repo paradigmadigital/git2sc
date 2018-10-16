@@ -321,6 +321,29 @@ class TestGit2SC(unittest.TestCase):
         self.git2sc.update_page(page_id, html, 'new title')
         self.assertEqual(self.git2sc.pages[page_id]['title'], 'new title')
 
+    def test_can_update_articles_with_missing_link(self):
+        '''Required to ensure that the update_page method can update a page
+        with the missing _link attribute'''
+
+        page_id = '372274410'
+        html = '<p> This is a test </p>'
+        self.git2sc.pages = {}
+        self.git2sc.pages[page_id] = {
+            'version': {
+                'number': 1
+            },
+            'title': 'Test page title',
+            'ancestors': [
+                {
+                    'ancestor': 'ancestor name',
+                    '_expandable': 'expandable',
+                    'extensions': 'extensions',
+                }
+            ]
+        }
+        self.git2sc.update_page(page_id, html, 'new title')
+        self.assertEqual(self.git2sc.pages[page_id]['title'], 'new title')
+
     @patch('git2sc.git2sc.Git2SC.get_page_info', autospect=True)
     def test_can_create_articles_as_parent(self, getPageInfoMock):
         '''Required to ensure that the create_page method posts to the
